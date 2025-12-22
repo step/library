@@ -3,6 +3,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import Scanner from "@/components/Scanner";
 import Snackbar from "@/components/Snackbar";
 import { useSnackbar } from "@/utils/useSnackbar";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { returnBook } from "../BooksApi";
 
@@ -10,6 +11,8 @@ import { returnBook } from "../BooksApi";
 const ReturnBook = () => {
     const [loading, setLoading] = useState(false);
     const { snackbar, showSuccess, showError, close } = useSnackbar();
+
+    const router = useRouter();
 
     const handleScanError = useCallback(() => {
         showError("Failed to scan QR code. Please try again.");
@@ -21,10 +24,11 @@ const ReturnBook = () => {
         setLoading(false);
         if (result.success) {
             showSuccess("Book returned successfully");
+            router.refresh();
         } else {
             showError(`Failed to return book: ${result.data.message}`);
         }
-    }, [showSuccess, showError, setLoading]);
+    }, [showSuccess, showError, setLoading, router]);
 
     return (
         <div>

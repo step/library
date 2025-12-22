@@ -143,24 +143,66 @@ const getBookCopyByQRCode = async (sql: SQL, qrCode: string): Promise<BookCopy |
 }
 
 export const returnBook = async (userId: number, barcode: string): Promise<{ success: boolean; message: string }> => {
-    const sql = neon(`${process.env.DATABASE_URL}`);
-    const bookCopy = await getBookCopyByQRCode(sql, barcode);
-    if (!bookCopy) {
-        return { success: false, message: 'Book copy not found' };
-    }
-    if (!bookCopy.borrowed) {
-        return { success: false, message: 'Book copy is not borrowed' };
-    }
-    const id = await sql`UPDATE borrowed_books
-        SET returned_at = CURRENT_TIMESTAMP
-        WHERE book_copy_id = ${bookCopy.id} AND user_id = ${userId} AND returned_at IS NULL RETURNING id;`
+    const client = await pool.connect();
 
-    if (id.length === 0) {
-        return { success: false, message: 'You have not borrowed this book' };
+    try {
+        await client.query('BEGIN');
+
+        // 1. Check if the book copy exists
+        const copyResult = await client.query(`
+            SELECT id, book_id, borrowed 
+            FROM book_copies 
+            WHERE qr_code = $1
+            LIMIT 1
+        `, [barcode]);
+
+        if (copyResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return { success: false, message: 'Book copy not found' };
+        }
+
+        const bookCopy = copyResult.rows[0];
+
+        if (!bookCopy.borrowed) {
+            await client.query('ROLLBACK');
+            return { success: false, message: 'Book copy is not borrowed' };
+        }
+
+        // 2. Update borrowed_books table
+        const updateBorrowedResult = await client.query(`
+            UPDATE borrowed_books
+            SET returned_at = CURRENT_TIMESTAMP
+            WHERE book_copy_id = $1 AND user_id = $2 AND returned_at IS NULL
+            RETURNING id
+        `, [bookCopy.id, userId]);
+
+        if (updateBorrowedResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return { success: false, message: 'You have not borrowed this book' };
+        }
+
+        // 3. Update book_copies table
+        await client.query(`
+            UPDATE book_copies 
+            SET borrowed = FALSE 
+            WHERE id = $1
+        `, [bookCopy.id]);
+
+        // 4. Update books table
+        await client.query(`
+            UPDATE books 
+            SET borrowed_count = borrowed_count - 1 
+            WHERE id = $1
+        `, [bookCopy.book_id]);
+
+        await client.query('COMMIT');
+        return { success: true, message: 'Book returned successfully' };
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error returning book:', error);
+        return { success: false, message: 'Failed to return book. Please try again.' };
+    } finally {
+        client.release();
     }
-
-    await sql`UPDATE book_copies SET borrowed = FALSE WHERE id = ${bookCopy.id};`;
-    await sql`UPDATE books SET borrowed_count = borrowed_count - 1 WHERE id = ${bookCopy.bookId};`;
-
-    return { success: true, message: 'Book returned successfully' };
 }
