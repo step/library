@@ -40,3 +40,59 @@ export const checkIsUserAdmin = async (email: string): Promise<boolean> => {
     `;
     return user.length > 0;
 }
+
+export const getAllLibraryUsers = async (): Promise<User[]> => {
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    const users = await sql`
+        SELECT id, name, email, is_admin as "isAdmin"
+        FROM library_users
+        ORDER BY created_at DESC;
+    `;
+    return users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        isAdmin: u.isAdmin,
+    }));
+}
+
+export const addLibraryUser = async (name: string, email: string, isAdmin: boolean): Promise<void> => {
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    await sql`
+        INSERT INTO library_users (name, email, is_admin)
+        VALUES (${name}, ${email}, ${isAdmin});
+    `;
+}
+
+export const bulkAddLibraryUsers = async (users: { name: string; email: string; isAdmin: boolean }[]): Promise<{ added: number; skipped: number }> => {
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    let added = 0;
+    let skipped = 0;
+    for (const user of users) {
+        const existing = await sql`SELECT id FROM library_users WHERE email = ${user.email} LIMIT 1`;
+        if (existing.length > 0) {
+            skipped++;
+            continue;
+        }
+        await sql`
+            INSERT INTO library_users (name, email, is_admin)
+            VALUES (${user.name}, ${user.email}, ${user.isAdmin});
+        `;
+        added++;
+    }
+    return { added, skipped };
+}
+
+export const updateUserRole = async (userId: number, isAdmin: boolean): Promise<void> => {
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    await sql`
+        UPDATE library_users SET is_admin = ${isAdmin} WHERE id = ${userId};
+    `;
+}
+
+export const deleteLibraryUser = async (userId: number): Promise<void> => {
+    const sql = neon(`${process.env.DATABASE_URL}`);
+    await sql`
+        DELETE FROM library_users WHERE id = ${userId};
+    `;
+}

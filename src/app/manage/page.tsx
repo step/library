@@ -1,5 +1,5 @@
 "use client";
-import { BookOpenCheckIcon, CopyPlusIcon } from "lucide-react";
+import { BookOpenCheckIcon, CopyPlusIcon, UsersIcon } from "lucide-react";
 import StickyFooter from "../../../components/StickyFooter";
 
 type ListProps = {
@@ -50,6 +50,12 @@ export default function ManagePage() {
                     description="See all books currently borrowed by users"
                     icon={<BookOpenCheckIcon size={20} color="var(--main-color)" />}
                     href="/manage/borrowed-books"
+                />
+                <ListItem
+                    label="Manage Users"
+                    description="Add, remove, and update user roles"
+                    icon={<UsersIcon size={20} color="var(--main-color)" />}
+                    href="/manage/users"
                 />
             </div>
 

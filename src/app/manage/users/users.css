@@ -1,0 +1,269 @@
+.users-manager {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 16px;
+    padding-bottom: 40px;
+}
+
+.section-title {
+    font-weight: 500;
+    font-size: 1rem;
+    margin: 0 0 12px 0;
+    color: var(--main-color);
+}
+
+/* Add user form */
+.add-user-form {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.add-user-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.user-input {
+    flex: 1;
+    min-width: 160px;
+    padding: 9px 12px;
+    font-size: 0.875rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.user-input:focus {
+    border-color: var(--main-color);
+}
+
+.admin-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* Bulk upload */
+.bulk-upload {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.csv-hint {
+    margin: 0 0 12px 0;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.csv-hint code {
+    background-color: #e9ecef;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.file-input {
+    font-size: 0.875rem;
+}
+
+.csv-preview {
+    margin-top: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.preview-label {
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background-color: #e9ecef;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.preview-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.preview-email {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.preview-more {
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.5);
+    border-top: 1px solid #dee2e6;
+}
+
+/* Users list */
+.users-list-section {
+    flex: 1;
+}
+
+.users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.empty-state {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.user-row:hover {
+    background-color: #e9ecef;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.user-name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #2c3e50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-email {
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Role badge */
+.role-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.role-admin {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.role-user {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+}
+
+/* Buttons */
+.action-btn {
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s, opacity 0.15s;
+    white-space: nowrap;
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.add-btn {
+    background-color: var(--main-color);
+    color: #fff;
+}
+
+.add-btn:hover:not(:disabled) {
+    background-color: #1e3040;
+}
+
+.toggle-btn {
+    background-color: #e9ecef;
+    color: #2c3e50;
+}
+
+.toggle-btn:hover:not(:disabled) {
+    background-color: #dee2e6;
+}
+
+.delete-btn {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.delete-btn:hover:not(:disabled) {
+    background-color: #f1aeb5;
+}
+
+@media (max-width: 600px) {
+    .user-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .user-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .add-user-fields {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .user-input {
+        min-width: unset;
+        width: 100%;
+    }
+}
