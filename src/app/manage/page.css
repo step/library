@@ -29,6 +29,18 @@
     color: rgba(0, 0, 0, 0.6);
 }
 
+.back-link {
+    display: inline-block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: rgba(0, 0, 0, 0.6);
+    text-decoration: none;
+}
+
+.back-link:hover {
+    color: rgba(0, 0, 0, 0.87);
+}
+
 .page-title {
     font-weight: 500;
     font-size: 1.25rem;

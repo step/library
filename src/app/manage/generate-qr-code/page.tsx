@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import PrimaryButton from "@/components/PrimaryButton";
 import TextInput from "@/components/TextInput";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -30,6 +31,7 @@ export default function GenerateQRCodePage() {
     return (
         <div className="page-container">
             <div>
+                <Link href="/manage" className="back-link">← Back</Link>
                 <h6 className="page-title">Generate QR Code</h6>
             </div>
             <div className="form-container">

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getAllBorrowedBooks } from "./action";
 import BorrowedBooks from "./BorrowedBooks";
 
@@ -7,6 +8,7 @@ const BorrowedBooksPage = async () => {
     return (
         <div className="page-container">
             <div>
+                <Link href="/manage" className="back-link">← Back</Link>
                 <h6 className="page-title">Borrowed Book</h6>
             </div>
             <div className="form-container">
