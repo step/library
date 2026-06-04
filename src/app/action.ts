@@ -99,5 +99,5 @@ export const loadBooksWithSearch = unstable_cache(
 
 // Cache invalidation function for book operations
 export const invalidateBooksCache = async () => {
-    revalidateTag('books');
+    revalidateTag('books', 'max');
 };

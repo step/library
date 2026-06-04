@@ -171,8 +171,14 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
         // 2. Update borrowed_books table
         const updateBorrowedResult = await client.query(`
             UPDATE borrowed_books
-            SET returned_at = CURRENT_TIMESTAMP
-            WHERE book_copy_id = $1 AND user_id = $2 AND returned_at IS NULL
+            SET returned_at = COALESCE(returned_at, CURRENT_TIMESTAMP)
+            WHERE book_copy_id = $1 AND user_id = $2
+              AND id = (
+                SELECT id FROM borrowed_books
+                WHERE book_copy_id = $1 AND user_id = $2
+                ORDER BY borrowed_at DESC
+                LIMIT 1
+              )
             RETURNING id
         `, [bookCopy.id, userId]);
 
@@ -183,15 +189,15 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
 
         // 3. Update book_copies table
         await client.query(`
-            UPDATE book_copies 
-            SET borrowed = FALSE 
+            UPDATE book_copies
+            SET borrowed = FALSE
             WHERE id = $1
         `, [bookCopy.id]);
 
         // 4. Update books table
         await client.query(`
-            UPDATE books 
-            SET borrowed_count = borrowed_count - 1 
+            UPDATE books
+            SET borrowed_count = borrowed_count - 1
             WHERE id = $1
         `, [bookCopy.book_id]);
 

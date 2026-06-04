@@ -1,5 +1,9 @@
+"use server";
 import { BorrowedBookWithUser } from '@/types/BorrowedBook';
 import { neon } from '@neondatabase/serverless';
+import { pool } from '../../lib/db';
+import { revalidatePath } from 'next/cache';
+import { invalidateBooksCache } from '../../action';
 
 export const getAllBorrowedBooks = async (): Promise<BorrowedBookWithUser[]> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
@@ -34,3 +38,50 @@ export const getAllBorrowedBooks = async (): Promise<BorrowedBookWithUser[]> => 
         qrCode: row.qrCode
     }));
 }
+
+export const forceReturnBook = async (
+    borrowedBookId: number,
+    bookCopyId: number
+): Promise<{ success: boolean; message: string }> => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // Mark the borrow record as returned (preserve existing returned_at if already set)
+        await client.query(`
+            UPDATE borrowed_books
+            SET returned_at = COALESCE(returned_at, CURRENT_TIMESTAMP)
+            WHERE id = $1
+        `, [borrowedBookId]);
+
+        // Flip the copy to not-borrowed; only decrement borrowed_count if it was actually borrowed
+        const copyResult = await client.query(`
+            UPDATE book_copies
+            SET borrowed = FALSE
+            WHERE id = $1 AND borrowed = TRUE
+            RETURNING book_id
+        `, [bookCopyId]);
+
+        if (copyResult.rows.length > 0) {
+            await client.query(`
+                UPDATE books
+                SET borrowed_count = GREATEST(borrowed_count - 1, 0)
+                WHERE id = $1
+            `, [copyResult.rows[0].book_id]);
+        }
+
+        await client.query('COMMIT');
+
+        revalidatePath('/manage/borrowed-books');
+        await invalidateBooksCache();
+
+        return { success: true, message: 'Book marked as returned successfully' };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error force returning book:', error);
+        return { success: false, message: 'Failed to mark book as returned' };
+    } finally {
+        client.release();
+    }
+};

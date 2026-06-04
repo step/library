@@ -106,6 +106,9 @@ const nextConfig = {
   experimental: {
     // Optimize package imports for better tree shaking
     optimizePackageImports: ['lucide-react', '@neondatabase/serverless']
+  },
+  turbopack:{
+    
   }
 };
 

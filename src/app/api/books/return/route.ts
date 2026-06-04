@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         // Attempt to return the book
         const result = await returnBook(user.id, barcode.trim());
         
-        if (!result) {
+        if (!result.success) {
             const duration = Date.now() - startTime;
             console.log(`[API] POST /api/books/return - Failed to return book (${duration}ms)`);
             return Response.json(
