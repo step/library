@@ -58,31 +58,36 @@ export const getAllLibraryUsers = async (): Promise<User[]> => {
     }));
 }
 
-export const addLibraryUser = async (name: string, email: string, isAdmin: boolean, batchId: number): Promise<void> => {
+export const addLibraryUser = async (name: string, email: string, isAdmin: boolean, batchId: number): Promise<User> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
-    await sql`
+    const result = await sql`
         INSERT INTO library_users (name, email, is_admin, batch_id)
-        VALUES (${name}, ${email}, ${isAdmin}, ${batchId});
+        VALUES (${name}, ${email}, ${isAdmin}, ${batchId})
+        RETURNING id, name, email, is_admin as "isAdmin", batch_id as "batchId";
     `;
+    return result[0] as User;
 }
 
-export const bulkAddLibraryUsers = async (users: { name: string; email: string; isAdmin: boolean; batchId: number }[]): Promise<{ added: number; skipped: number }> => {
+export const bulkAddLibraryUsers = async (users: { name: string; email: string; isAdmin: boolean; batchId: number }[]): Promise<{ added: number; skipped: number; users: User[] }> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
     let added = 0;
     let skipped = 0;
+    const inserted: User[] = [];
     for (const user of users) {
         const existing = await sql`SELECT id FROM library_users WHERE email = ${user.email} LIMIT 1`;
         if (existing.length > 0) {
             skipped++;
             continue;
         }
-        await sql`
+        const result = await sql`
             INSERT INTO library_users (name, email, is_admin, batch_id)
-            VALUES (${user.name}, ${user.email}, ${user.isAdmin}, ${user.batchId});
+            VALUES (${user.name}, ${user.email}, ${user.isAdmin}, ${user.batchId})
+            RETURNING id, name, email, is_admin as "isAdmin", batch_id as "batchId";
         `;
+        inserted.push(result[0] as User);
         added++;
     }
-    return { added, skipped };
+    return { added, skipped, users: inserted };
 }
 
 export const updateUserRole = async (userId: number, isAdmin: boolean): Promise<void> => {

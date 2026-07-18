@@ -37,7 +37,7 @@ const AddUserForm = ({ onAdded }: { onAdded: (user: User) => void }) => {
             const data = await res.json();
             if (res.ok) {
                 showSuccess("User added successfully");
-                onAdded({ id: Date.now(), name: name.trim(), email: email.trim().toLowerCase(), isAdmin, batchId: Number(batchId) });
+                onAdded(data.user);
                 setName("");
                 setEmail("");
                 setBatchId("");
@@ -140,7 +140,7 @@ const BulkUpload = ({ onAdded }: { onAdded: (users: User[]) => void }) => {
             const data = await res.json();
             if (res.ok) {
                 showSuccess(data.message);
-                onAdded(preview.map((u, i) => ({ id: Date.now() + i, ...u })));
+                onAdded(data.users);
                 setPreview([]);
                 if (fileRef.current) fileRef.current.value = "";
             } else {

@@ -44,11 +44,11 @@ export const POST = async (req: NextRequest) => {
             return Response.json({ error: "batchId is required and must be an integer" }, { status: 400 });
         }
 
-        await addLibraryUser(name.trim(), email.trim().toLowerCase(), !!isAdmin, parsedBatchId);
+        const user = await addLibraryUser(name.trim(), email.trim().toLowerCase(), !!isAdmin, parsedBatchId);
 
         const duration = Date.now() - startTime;
         console.log(`[API] POST /api/users - Added user ${email} in ${duration}ms`);
-        return Response.json({ message: "User added successfully" }, { status: 201 });
+        return Response.json({ message: "User added successfully", user }, { status: 201 });
     } catch (error) {
         const duration = Date.now() - startTime;
         if (error instanceof Error && error.message.includes('unique')) {
