@@ -18,8 +18,8 @@ export const POST = async (req: NextRequest) => {
         }
 
         for (const u of users) {
-            if (!u.name || !u.email) {
-                return Response.json({ error: "Each user must have name and email" }, { status: 400 });
+            if (!u.name || !u.email || !Number.isInteger(Number(u.batchId))) {
+                return Response.json({ error: "Each user must have name, email and an integer batchId" }, { status: 400 });
             }
         }
 
@@ -28,6 +28,7 @@ export const POST = async (req: NextRequest) => {
                 name: u.name.trim(),
                 email: u.email.trim().toLowerCase(),
                 isAdmin: !!u.isAdmin,
+                batchId: Number(u.batchId),
             }))
         );
 

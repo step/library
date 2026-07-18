@@ -10,8 +10,8 @@ export const getLoggedInUser = async (): Promise<User | null> => {
     }
     const sql = neon(`${process.env.DATABASE_URL}`);
     const user = await sql`
-        SELECT id, name, email, is_admin as "isAdmin" 
-        FROM library_users 
+        SELECT id, name, email, is_admin as "isAdmin", batch_id as "batchId"
+        FROM library_users
         WHERE email = ${session.user.email} LIMIT 1;
     `;
     if (user.length === 0) {
@@ -22,6 +22,7 @@ export const getLoggedInUser = async (): Promise<User | null> => {
         name: user[0].name,
         email: user[0].email,
         isAdmin: user[0].isAdmin,
+        batchId: user[0].batchId,
     };
 }
 
@@ -44,7 +45,7 @@ export const checkIsUserAdmin = async (email: string): Promise<boolean> => {
 export const getAllLibraryUsers = async (): Promise<User[]> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
     const users = await sql`
-        SELECT id, name, email, is_admin as "isAdmin"
+        SELECT id, name, email, is_admin as "isAdmin", batch_id as "batchId"
         FROM library_users
         ORDER BY created_at DESC;
     `;
@@ -53,18 +54,19 @@ export const getAllLibraryUsers = async (): Promise<User[]> => {
         name: u.name,
         email: u.email,
         isAdmin: u.isAdmin,
+        batchId: u.batchId,
     }));
 }
 
-export const addLibraryUser = async (name: string, email: string, isAdmin: boolean): Promise<void> => {
+export const addLibraryUser = async (name: string, email: string, isAdmin: boolean, batchId: number): Promise<void> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
     await sql`
-        INSERT INTO library_users (name, email, is_admin)
-        VALUES (${name}, ${email}, ${isAdmin});
+        INSERT INTO library_users (name, email, is_admin, batch_id)
+        VALUES (${name}, ${email}, ${isAdmin}, ${batchId});
     `;
 }
 
-export const bulkAddLibraryUsers = async (users: { name: string; email: string; isAdmin: boolean }[]): Promise<{ added: number; skipped: number }> => {
+export const bulkAddLibraryUsers = async (users: { name: string; email: string; isAdmin: boolean; batchId: number }[]): Promise<{ added: number; skipped: number }> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
     let added = 0;
     let skipped = 0;
@@ -75,8 +77,8 @@ export const bulkAddLibraryUsers = async (users: { name: string; email: string; 
             continue;
         }
         await sql`
-            INSERT INTO library_users (name, email, is_admin)
-            VALUES (${user.name}, ${user.email}, ${user.isAdmin});
+            INSERT INTO library_users (name, email, is_admin, batch_id)
+            VALUES (${user.name}, ${user.email}, ${user.isAdmin}, ${user.batchId});
         `;
         added++;
     }

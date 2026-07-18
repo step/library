@@ -111,6 +111,10 @@
     color: rgba(0, 0, 0, 0.5);
 }
 
+.preview-batch {
+    color: rgba(0, 0, 0, 0.5);
+}
+
 .preview-more {
     margin: 0;
     padding: 6px 12px;
@@ -174,6 +178,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.user-batch {
+    font-size: 0.75rem;
+    color: rgba(0, 0, 0, 0.45);
 }
 
 .user-actions {

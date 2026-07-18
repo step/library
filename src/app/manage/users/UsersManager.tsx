@@ -19,26 +19,28 @@ const RoleBadge = ({ isAdmin }: { isAdmin: boolean }) => (
 const AddUserForm = ({ onAdded }: { onAdded: (user: User) => void }) => {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
+    const [batchId, setBatchId] = useState("");
     const [isAdmin, setIsAdmin] = useState(false);
     const [isPending, startTransition] = useTransition();
     const { snackbar, showSuccess, showError, close } = useSnackbar();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || !email.trim()) return;
+        if (!name.trim() || !email.trim() || !batchId.trim()) return;
 
         startTransition(async () => {
             const res = await fetch("/api/users", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name.trim(), email: email.trim(), isAdmin }),
+                body: JSON.stringify({ name: name.trim(), email: email.trim(), isAdmin, batchId: Number(batchId) }),
             });
             const data = await res.json();
             if (res.ok) {
                 showSuccess("User added successfully");
-                onAdded({ id: Date.now(), name: name.trim(), email: email.trim().toLowerCase(), isAdmin });
+                onAdded({ id: Date.now(), name: name.trim(), email: email.trim().toLowerCase(), isAdmin, batchId: Number(batchId) });
                 setName("");
                 setEmail("");
+                setBatchId("");
                 setIsAdmin(false);
             } else {
                 showError(data.error || "Failed to add user");
@@ -68,6 +70,15 @@ const AddUserForm = ({ onAdded }: { onAdded: (user: User) => void }) => {
                         required
                         disabled={isPending}
                     />
+                    <input
+                        className="user-input"
+                        placeholder="Batch ID"
+                        type="number"
+                        value={batchId}
+                        onChange={e => setBatchId(e.target.value)}
+                        required
+                        disabled={isPending}
+                    />
                     <label className="admin-checkbox">
                         <input
                             type="checkbox"
@@ -89,19 +100,20 @@ const AddUserForm = ({ onAdded }: { onAdded: (user: User) => void }) => {
 
 const BulkUpload = ({ onAdded }: { onAdded: (users: User[]) => void }) => {
     const [isPending, startTransition] = useTransition();
-    const [preview, setPreview] = useState<{ name: string; email: string; isAdmin: boolean }[]>([]);
+    const [preview, setPreview] = useState<{ name: string; email: string; isAdmin: boolean; batchId: number }[]>([]);
     const fileRef = useRef<HTMLInputElement>(null);
     const { snackbar, showSuccess, showError, close } = useSnackbar();
 
     const parseCSV = (text: string) => {
         const lines = text.trim().split("\n").filter(l => l.trim());
-        const parsed: { name: string; email: string; isAdmin: boolean }[] = [];
+        const parsed: { name: string; email: string; isAdmin: boolean; batchId: number }[] = [];
         for (const line of lines) {
             const parts = line.split(",").map(p => p.trim());
-            if (parts.length < 2) continue;
-            const [name, email, adminFlag] = parts;
-            if (!name || !email) continue;
-            parsed.push({ name, email, isAdmin: adminFlag?.toLowerCase() === "true" });
+            if (parts.length < 3) continue;
+            const [name, email, batchIdRaw, adminFlag] = parts;
+            const batchId = Number(batchIdRaw);
+            if (!name || !email || !Number.isInteger(batchId)) continue;
+            parsed.push({ name, email, batchId, isAdmin: adminFlag?.toLowerCase() === "true" });
         }
         return parsed;
     };
@@ -141,7 +153,7 @@ const BulkUpload = ({ onAdded }: { onAdded: (users: User[]) => void }) => {
         <>
             <div className="bulk-upload">
                 <h6 className="section-title">Bulk Upload via CSV</h6>
-                <p className="csv-hint">CSV format: <code>name,email,is_admin</code> (is_admin: true/false, optional)</p>
+                <p className="csv-hint">CSV format: <code>name,email,batch_id,is_admin</code> (is_admin: true/false, optional)</p>
                 <div className="bulk-actions">
                     <input
                         ref={fileRef}
@@ -164,6 +176,7 @@ const BulkUpload = ({ onAdded }: { onAdded: (users: User[]) => void }) => {
                             <div key={i} className="preview-row">
                                 <span>{u.name}</span>
                                 <span className="preview-email">{u.email}</span>
+                                <span className="preview-batch">Batch {u.batchId}</span>
                                 {u.isAdmin && <span className="role-badge role-admin">Admin</span>}
                             </div>
                         ))}
@@ -224,6 +237,7 @@ const UserRow = ({
                 <div className="user-info">
                     <span className="user-name">{user.name}</span>
                     <span className="user-email">{user.email}</span>
+                    <span className="user-batch">Batch {user.batchId}</span>
                 </div>
                 <div className="user-actions">
                     <RoleBadge isAdmin={user.isAdmin} />

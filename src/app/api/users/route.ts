@@ -33,13 +33,18 @@ export const POST = async (req: NextRequest) => {
     }
 
     try {
-        const { name, email, isAdmin } = await req.json();
+        const { name, email, isAdmin, batchId } = await req.json();
 
         if (!name || !email) {
             return Response.json({ error: "name and email are required" }, { status: 400 });
         }
 
-        await addLibraryUser(name.trim(), email.trim().toLowerCase(), !!isAdmin);
+        const parsedBatchId = Number(batchId);
+        if (!Number.isInteger(parsedBatchId)) {
+            return Response.json({ error: "batchId is required and must be an integer" }, { status: 400 });
+        }
+
+        await addLibraryUser(name.trim(), email.trim().toLowerCase(), !!isAdmin, parsedBatchId);
 
         const duration = Date.now() - startTime;
         console.log(`[API] POST /api/users - Added user ${email} in ${duration}ms`);
