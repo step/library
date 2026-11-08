@@ -126,15 +126,15 @@ Plain SQL dumps begin with `SELECT pg_catalog.set_config('search_path', '', fals
 
 ### 9. `library-dev` holds production data
 
-The dev database was populated from a production dump. The `sessions` and `accounts` tables contain live session and OAuth tokens, and `library_users` and `users` contain real emails.
+The dev database was populated from a production dump, so `sessions` and `accounts` contain live session and OAuth tokens, and `library_users` and `users` contain real emails.
 
-**Fix:** clear `sessions` and `accounts` in dev, and use a separate `NEXTAUTH_SECRET` for dev.
+**Plan changed:** `library-dev` will become the production database. The prod app will be pointed at it once everything is fixed and verified, so migrations 0001 onwards are not applied to prod separately. Do **not** clear `sessions` and `accounts`, and keep the same `NEXTAUTH_SECRET`, or every user is signed out.
+
+**Before cutover:** dev is only a copy of prod from some earlier point, and prod keeps taking borrows and returns. Re-sync first: take a fresh dump of prod, restore it into the target database with `scripts/db-restore.sh`, then replay the migrations. Switching to the current `library-dev` unchanged would lose recent prod data. A diff on 2026-11-09 already showed `borrowed_books` row 299 missing from dev.
 
 ### 10. Credentials exposed in chat
 
-The dev database password was pasted into a working session several times.
-
-**Fix:** rotate it in the Neon console if that branch matters.
+The dev database password was pasted into a working session several times. Because dev will become prod, rotate it in the Neon console before cutover.
 
 ## What is already good
 
