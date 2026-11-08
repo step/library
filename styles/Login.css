@@ -1,31 +1,55 @@
-.google-login-button {
-  display: inline-flex;
-  align-items: center;
-  background-color: #ffffff;
-  color: #555555;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.google-login-button:hover {
-  background-color: #f7f7f7;
-}
-
-.google-icon-wrapper {
+/* Sign-in page. Tokens: EE Blue #1795D4, Tech Blue #22567C, Dark Data #212526, Slate neutrals. */
+.lb-signin {
+  min-height: 100vh;
   display: flex;
-  align-items: center;
-  margin-right: 8px;
+  background: #fff;
+  color: #212526;
+  letter-spacing: 0.01em;
+  font-size: 16px;
+  line-height: 24px;
+}
+.lb-signin *,
+.lb-signin *::before,
+.lb-signin *::after { box-sizing: border-box; }
+.lb-signin button { font-family: inherit; letter-spacing: inherit; cursor: pointer; }
+.lb-signin :focus-visible { outline: 2px solid #1795D4; outline-offset: 2px; }
+.lb-signin svg { flex: none; }
+
+.lb-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.lb-mark { width: 32px; height: 32px; border-radius: 6px; background: #22567C; color: #fff; display: flex; align-items: center; justify-content: center; }
+
+.lb-ill { --ill-bg: #DCEEF8; display: block; width: 100%; height: auto; }
+.lb-ill-card { max-width: 260px; margin: 0 auto; }
+.lb-ill-aside { --ill-bg: #2E6A94; max-width: 340px; margin-top: auto; }
+
+.lb-signin-aside { display: none; flex: 0 0 46%; flex-direction: column; gap: 64px; padding: 48px; background: #22567C; color: #fff; }
+.lb-signin-aside .lb-mark { background: #fff; color: #22567C; }
+.lb-signin-aside h2 { margin: 0 0 32px; font-size: 32px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; max-width: 420px; }
+.lb-feats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 24px; max-width: 420px; }
+.lb-feat { display: flex; gap: 16px; align-items: flex-start; }
+.lb-feat-ic { width: 40px; height: 40px; border-radius: 6px; background: rgba(255, 255, 255, 0.16); display: flex; align-items: center; justify-content: center; }
+.lb-feat-t { display: block; font-size: 16px; line-height: 24px; font-weight: 500; }
+.lb-feat-d { display: block; font-size: 14px; line-height: 20px; color: #D3E2ED; }
+
+.lb-signin-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.lb-signin-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
+.lb-signin-card h1 { margin: 0; font-size: 28px; line-height: 36px; font-weight: 600; letter-spacing: -0.02em; }
+.lb-signin-card p { margin: 0; font-size: 15px; line-height: 24px; color: #475569; }
+.lb-signin-card .lb-fine { font-size: 13px; line-height: 20px; }
+
+.lb-google { height: 52px; display: flex; align-items: center; justify-content: center; gap: 12px; border: 1px solid #64748B; border-radius: 6px; background: #fff; color: #212526; font-size: 16px; font-weight: 500; }
+.lb-google:hover { background: #F1F5F9; }
+
+/* Tablet */
+@media (min-width: 768px) {
+  .lb-signin-main { background: #F1F5F9; }
+  .lb-signin-card { padding: 40px; background: #fff; border: 1px solid #E2E8F0; max-width: 440px; }
 }
 
-.google-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.google-button-text {
-  font-weight: 500;
+/* Desktop */
+@media (min-width: 1100px) {
+  .lb-signin-aside { display: flex; }
+  .lb-ill-card { display: none; }
+  .lb-signin-main { background: #fff; }
+  .lb-signin-card { padding: 0; border: 0; background: transparent; }
 }
