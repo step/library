@@ -66,6 +66,7 @@ export const borrowBook = async (userId: number, qrCode: string): Promise<Borrow
             FROM book_copies bc
             JOIN books b ON bc.book_id = b.id
             WHERE bc.qr_code = $1
+            FOR UPDATE OF bc
         `, [qrCode]);
 
         if (copyResult.rows.length === 0) {
@@ -154,6 +155,7 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
             FROM book_copies 
             WHERE qr_code = $1
             LIMIT 1
+            FOR UPDATE
         `, [barcode]);
 
         if (copyResult.rows.length === 0) {

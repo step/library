@@ -9,12 +9,16 @@
     "lint": "next lint",
     "analyze": "ANALYZE=true npm run build",
     "analyze:server": "BUNDLE_ANALYZE=server npm run build",
-    "analyze:browser": "BUNDLE_ANALYZE=browser npm run build"
+    "analyze:browser": "BUNDLE_ANALYZE=browser npm run build",
+    "db:generate": "node --env-file=.env node_modules/.bin/drizzle-kit generate",
+    "db:migrate": "node --env-file=.env node_modules/.bin/drizzle-kit migrate",
+    "db:pull": "node --env-file=.env node_modules/.bin/drizzle-kit pull"
   },
   "dependencies": {
     "@auth/neon-adapter": "^1.10.0",
     "@neondatabase/serverless": "^1.0.1",
     "@yudiel/react-qr-scanner": "^2.3.1",
+    "drizzle-orm": "^0.45.4",
     "lucide-react": "^0.525.0",
     "next": "^16.2.7",
     "next-auth": "^4.24.14",
@@ -32,6 +36,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "typescript": "^5"
