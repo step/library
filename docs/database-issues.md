@@ -13,7 +13,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 | 5 | Two user systems | open |
 | 6 | Redundant indexes | open |
 | 7 | Minor items | open |
-| 8 | `db-restore.sh` pooler | open |
+| 8 | `db-restore.sh` pooler | **DONE** |
 | 9 | Dev holds prod data | open |
 | 10 | Credentials exposed | open |
 
@@ -122,7 +122,7 @@ Plain SQL dumps begin with `SELECT pg_catalog.set_config('search_path', '', fals
 
 - Symptom: NextAuth error `adapter_error_getuserbyaccount`.
 - Recovery: restart the Neon compute (this clears the pooled connections).
-- Prevention: `scripts/db-restore.sh` should strip `-pooler` from the host and connect directly. This is not done yet.
+- **Status: DONE.** `scripts/db-restore.sh` now strips `-pooler` from the target host and connects directly, printing a note when it does. The script was recovered from a git stash, because it had never been committed. `scripts/dumps/` is gitignored, since dumps contain real emails and tokens.
 
 ### 9. `library-dev` holds production data
 
