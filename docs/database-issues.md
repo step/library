@@ -6,7 +6,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 
 | # | Issue | Status |
 |---|---|---|
-| 1 | `borrowed_books.user_id` has no FK | open |
+| 1 | `borrowed_books.user_id` has no FK | **DONE** (`0003_borrowed_books_user_fk`) |
 | 2 | Copy can be double-borrowed | **DONE** (`0001_one_open_loan_per_copy`) |
 | 3 | Redundant state | open |
 | 4 | Missing constraints | **DONE** (`0002_not_null_and_checks`) |
@@ -28,7 +28,11 @@ An issue is marked **DONE** only once its migration is written, committed under 
 
 **Fix:** add `FOREIGN KEY (user_id) REFERENCES library_users(id) ON DELETE RESTRICT` (or soft-delete users and block deletion while they hold books). The API route `DELETE /api/users/[id]` should map the resulting FK violation (Postgres code `23503`) to a 409 instead of a 500.
 
-Status: a migration was written and tested, applied to `library-dev`, then reverted. It is not in the repository.
+**Status: DONE.** Migration `drizzle/0003_borrowed_books_user_fk.sql`, executed on `library-dev`.
+- Adds `borrowed_books_user_id_fkey` with `ON DELETE RESTRICT`.
+- No orphaned or NULL `user_id` rows on dev or prod (checked 2026-11-09).
+- `DELETE /api/users/[id]` now returns 409 on Postgres error `23503`.
+- Prod does not yet have migrations 0001 and 0002, so apply all of 0001 to 0003 in order there.
 
 ### 2. A copy can be double-borrowed
 

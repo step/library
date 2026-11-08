@@ -39,6 +39,12 @@ export const borrowedBooks = pgTable("borrowed_books", {
 			foreignColumns: [bookCopies.id],
 			name: "borrowed_books_book_copy_id_fkey"
 		}).onDelete("cascade"),
+	// A user who has borrow history cannot be deleted.
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [libraryUsers.id],
+			name: "borrowed_books_user_id_fkey"
+		}).onDelete("restrict"),
 ]);
 
 export const libraryUsers = pgTable("library_users", {

@@ -62,6 +62,13 @@ export const DELETE = async (_req: NextRequest, { params }: { params: Promise<{ 
     } catch (error) {
         const duration = Date.now() - startTime;
         console.error(`[API] DELETE /api/users/${id} - Error after ${duration}ms:`, error);
+        // 23503 = foreign_key_violation: the user still has borrow history.
+        if ((error as { code?: string })?.code === "23503") {
+            return Response.json(
+                { error: "User has borrowed books and cannot be deleted" },
+                { status: 409 }
+            );
+        }
         return Response.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
