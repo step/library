@@ -43,6 +43,13 @@
       "when": 1794166789077,
       "tag": "0005_sync_copy_borrowed_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794167010673,
+      "tag": "0006_drop_redundant_indexes",
+      "breakpoints": true
     }
   ]
 }

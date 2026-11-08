@@ -55,7 +55,6 @@ export const libraryUsers = pgTable("library_users", {
 	batchId: integer("batch_id").notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
-	index("idx_library_users_email").using("btree", table.email.asc().nullsLast()),
 	unique("library_users_email_key").on(table.email),
 ]);
 
@@ -66,8 +65,6 @@ export const booksDb = pgTable("books_db", {
 	isbn10: varchar({ length: 10 }),
 	isbn13: varchar({ length: 13 }),
 }, (table) => [
-	index("idx_books_db_isbn10").using("btree", table.isbn10.asc().nullsLast()),
-	index("idx_books_db_isbn13").using("btree", table.isbn13.asc().nullsLast()),
 	unique("books_db_isbn10_key").on(table.isbn10),
 	unique("books_db_isbn13_key").on(table.isbn13),
 ]);
@@ -103,9 +100,6 @@ export const books = pgTable("books", {
 	borrowedCount: integer("borrowed_count").default(0).notNull(),
 }, (table) => [
 	index("idx_books_id_title").using("btree", table.id.asc().nullsLast(), table.title.asc().nullsLast()),
-	index("idx_books_isbn10").using("btree", table.isbn10.asc().nullsLast()),
-	index("idx_books_isbn13").using("btree", table.isbn13.asc().nullsLast()),
-	index("idx_books_title").using("btree", table.title.asc().nullsLast()),
 	index("idx_books_title_gin").using("gin", table.title.asc().nullsLast().op("gin_trgm_ops")),
 	unique("books_isbn10_key").on(table.isbn10),
 	unique("books_isbn13_key").on(table.isbn13),
@@ -120,8 +114,6 @@ export const bookCopies = pgTable("book_copies", {
 	qrCode: text("qr_code").notNull(),
 }, (table) => [
 	index("idx_book_copies_book_id").using("btree", table.bookId.asc().nullsLast()),
-	index("idx_book_copies_borrowed").using("btree", table.borrowed.asc().nullsLast()),
-	index("idx_book_copies_qr_code").using("btree", table.qrCode.asc().nullsLast()),
 	foreignKey({
 			columns: [table.bookId],
 			foreignColumns: [books.id],

@@ -11,7 +11,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 | 3 | Redundant state | **DONE** (`0004_sync_book_counts`, `0005_sync_copy_borrowed_flag`) |
 | 4 | Missing constraints | **DONE** (`0002_not_null_and_checks`) |
 | 5 | Two user systems | open |
-| 6 | Redundant indexes | open |
+| 6 | Redundant indexes | **DONE** (`0006_drop_redundant_indexes`) |
 | 7 | Minor items | open |
 | 8 | `db-restore.sh` pooler | **DONE** |
 | 9 | Dev holds prod data | open |
@@ -113,6 +113,14 @@ Also:
 - `idx_book_copies_borrowed` is a low-selectivity boolean index and is unlikely to be used.
 
 **Fix:** drop the redundant indexes after confirming with `pg_stat_user_indexes` that they are unused.
+
+**Status: DONE.** Migration `drizzle/0006_drop_redundant_indexes.sql`, executed on `library-dev`. Usage was checked on `library-prod` (read-only, stats never reset) and dev.
+- Dropped the six exact duplicates of a `UNIQUE` index: `idx_library_users_email`, `idx_books_isbn10`, `idx_books_isbn13`, `idx_books_db_isbn10`, `idx_books_db_isbn13`, `idx_book_copies_qr_code`. Postgres splits scans between two identical indexes, so some of them showed prod scans. The unique index takes over.
+- Dropped `idx_books_title`: 0 scans on prod and dev. No query orders by or matches `title` exactly, and search uses `ILIKE '%q%'`.
+- Dropped `idx_book_copies_borrowed`: 0 scans on both.
+- **Kept `idx_books_id_title`:** the doc called it redundant, but prod shows 7,349 scans. It serves the paginated search query (`WHERE id > ... AND title ILIKE ... ORDER BY id`).
+- **Kept `idx_books_title_gin`:** 0 scans today because `books` has only 279 rows and a sequential scan is cheaper. It is the right index for `ILIKE` search if the catalog grows.
+- Not touched, unused or redundant but outside this issue: `idx_sessions_expires`, `idx_sessions_user_id`, `idx_verification_token_expires`, and `idx_verification_token_identifier` (a prefix of the primary key).
 
 ### 7. Minor items
 
