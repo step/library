@@ -99,7 +99,13 @@ export const updateUserRole = async (userId: number, isAdmin: boolean): Promise<
 
 export const deleteLibraryUser = async (userId: number): Promise<void> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
+    // One statement, so it is atomic: if the library user cannot be deleted (FK violation from
+    // borrow history) nothing is removed. Deleting the matching NextAuth user cascades to its
+    // accounts and sessions, which signs the deleted user out immediately.
     await sql`
-        DELETE FROM library_users WHERE id = ${userId};
+        WITH deleted AS (
+            DELETE FROM library_users WHERE id = ${userId} RETURNING email
+        )
+        DELETE FROM users WHERE email IN (SELECT email FROM deleted);
     `;
 }

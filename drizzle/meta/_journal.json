@@ -57,6 +57,13 @@
       "when": 1794167581926,
       "tag": "0007_timestamptz_and_text_titles",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794167963775,
+      "tag": "0008_nextauth_integrity",
+      "breakpoints": true
     }
   ]
 }

@@ -18,8 +18,14 @@ export const accounts = pgTable("accounts", {
 	sessionState: text("session_state"),
 	tokenType: text("token_type"),
 }, (table) => [
-	index("idx_accounts_provider").using("btree", table.provider.asc().nullsLast(), table.providerAccountId.asc().nullsLast()),
 	index("idx_accounts_user_id").using("btree", table.userId.asc().nullsLast()),
+	unique("accounts_provider_key").on(table.provider, table.providerAccountId),
+	// Removing a NextAuth user removes their linked accounts.
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "accounts_user_id_fkey"
+		}).onDelete("cascade"),
 ]);
 
 export const borrowedBooks = pgTable("borrowed_books", {
@@ -76,8 +82,14 @@ export const sessions = pgTable("sessions", {
 	sessionToken: varchar({ length: 255 }).notNull(),
 }, (table) => [
 	index("idx_sessions_expires").using("btree", table.expires.asc().nullsLast()),
-	index("idx_sessions_token").using("btree", table.sessionToken.asc().nullsLast()),
 	index("idx_sessions_user_id").using("btree", table.userId.asc().nullsLast()),
+	unique("sessions_session_token_key").on(table.sessionToken),
+	// Removing a NextAuth user ends their sessions.
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "sessions_user_id_fkey"
+		}).onDelete("cascade"),
 ]);
 
 export const users = pgTable("users", {
@@ -87,7 +99,7 @@ export const users = pgTable("users", {
 	emailVerified: timestamp({ withTimezone: true, mode: 'string' }),
 	image: text(),
 }, (table) => [
-	index("idx_users_email").using("btree", table.email.asc().nullsLast()),
+	unique("users_email_key").on(table.email),
 ]);
 
 export const books = pgTable("books", {

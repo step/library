@@ -10,7 +10,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 | 2 | Copy can be double-borrowed | **DONE** (`0001_one_open_loan_per_copy`) |
 | 3 | Redundant state | **DONE** (`0004_sync_book_counts`, `0005_sync_copy_borrowed_flag`) |
 | 4 | Missing constraints | **DONE** (`0002_not_null_and_checks`) |
-| 5 | Two user systems | open |
+| 5 | Two user systems | **DONE** (`0008_nextauth_integrity`) |
 | 6 | Redundant indexes | **DONE** (`0006_drop_redundant_indexes`) |
 | 7 | Minor items | **DONE** (`0007_timestamptz_and_text_titles`) |
 | 8 | `db-restore.sh` pooler | **DONE** |
@@ -94,6 +94,14 @@ Whether a copy is borrowed is recorded in three places:
 - `sessions` and `accounts` rows are not cleaned up when a user is removed.
 
 **Fix:** decide on one canonical user key, add FKs with `ON DELETE CASCADE` on `accounts` and `sessions`, and make `users.email` unique.
+
+**Status: DONE.** Migration `drizzle/0008_nextauth_integrity.sql`, executed on `library-dev`.
+- **Decision:** `library_users` is the app's identity (`borrowed_books.user_id` points at it). The NextAuth `users` table is only the sign-in record and stays linked to it by email.
+- `users.email` is now unique (`users_email_key`), and so are `accounts (provider, providerAccountId)` and `sessions.sessionToken`, which NextAuth assumes. They replace `idx_users_email`, `idx_accounts_provider` and `idx_sessions_token`.
+- `accounts.userId` and `sessions.userId` now have FKs to `users(id)` with `ON DELETE CASCADE`.
+- Data cleanup: removed the two NextAuth users whose `library_users` row had been deleted (users 72 and 94, expired sessions only). No duplicate emails, tokens or provider accounts existed.
+- `deleteLibraryUser` (`db/user.ts`) now removes the matching NextAuth user in the same statement, so deleting a library user cascades to their accounts and sessions and signs them out at once. If the library user has borrow history, the FK from issue 1 refuses the whole statement and nothing is deleted.
+- Not changed: the email link is exact-match. Dev has no case mismatches.
 
 ### 6. Redundant indexes
 
