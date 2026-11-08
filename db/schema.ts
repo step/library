@@ -26,8 +26,8 @@ export const borrowedBooks = pgTable("borrowed_books", {
 	id: serial().primaryKey().notNull(),
 	bookCopyId: integer("book_copy_id").notNull(),
 	userId: integer("user_id").notNull(),
-	borrowedAt: timestamp("borrowed_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
-	returnedAt: timestamp("returned_at", { mode: 'string' }),
+	borrowedAt: timestamp("borrowed_at", { withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+	returnedAt: timestamp("returned_at", { withTimezone: true, mode: 'string' }),
 }, (table) => [
 	index("idx_borrowed_books_book_copy_id").using("btree", table.bookCopyId.asc().nullsLast()),
 	index("idx_borrowed_books_user_borrowed").using("btree", table.userId.asc().nullsLast(), table.borrowedAt.asc().nullsLast()).where(sql`(returned_at IS NULL)`),
@@ -53,14 +53,14 @@ export const libraryUsers = pgTable("library_users", {
 	email: varchar({ length: 255 }).notNull(),
 	isAdmin: boolean("is_admin").default(false),
 	batchId: integer("batch_id").notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [
 	unique("library_users_email_key").on(table.email),
 ]);
 
 export const booksDb = pgTable("books_db", {
 	id: serial().primaryKey().notNull(),
-	title: varchar({ length: 255 }).notNull(),
+	title: text().notNull(),
 	authors: text(),
 	isbn10: varchar({ length: 10 }),
 	isbn13: varchar({ length: 13 }),
@@ -92,7 +92,7 @@ export const users = pgTable("users", {
 
 export const books = pgTable("books", {
 	id: serial().primaryKey().notNull(),
-	title: varchar({ length: 255 }).notNull(),
+	title: text().notNull(),
 	authors: text().notNull(),
 	isbn10: varchar({ length: 10 }),
 	isbn13: varchar({ length: 13 }),

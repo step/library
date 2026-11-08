@@ -12,7 +12,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 | 4 | Missing constraints | **DONE** (`0002_not_null_and_checks`) |
 | 5 | Two user systems | open |
 | 6 | Redundant indexes | **DONE** (`0006_drop_redundant_indexes`) |
-| 7 | Minor items | open |
+| 7 | Minor items | **DONE** (`0007_timestamptz_and_text_titles`) |
 | 8 | `db-restore.sh` pooler | **DONE** |
 | 9 | Dev holds prod data | open |
 | 10 | Credentials exposed | open |
@@ -128,6 +128,13 @@ Also:
 - `library_users.batch_id` is a bare integer with no `batches` table.
 - `books.title` is capped at `VARCHAR(255)`.
 - There is no migration tooling. `schema.sql` is a single `IF NOT EXISTS` script, so changes such as adding `batch_id NOT NULL` do not apply to an existing database. A small SQL migration runner (`scripts/migrate.mjs`) was prototyped but no migrations are committed.
+
+**Status: DONE.** Migration `drizzle/0007_timestamptz_and_text_titles.sql`, executed on `library-dev`.
+- `borrowed_at`, `returned_at` and `library_users.created_at` are now `TIMESTAMPTZ`. Existing values were UTC (Neon runs in GMT) and were converted explicitly with `AT TIME ZONE 'UTC'`, so the instants are unchanged. Side effect: the Neon driver parsed the old `TIMESTAMP` values in the Node server's time zone, so a server outside UTC showed borrow times shifted (5.5 hours on an IST machine). It now returns the right instant everywhere.
+- `books.title` and `books_db.title` are `TEXT`. The longest existing title is 126 characters.
+- Migration tooling: done, see issues 2 and 4.
+- The migration drops and recreates `trg_borrowed_books_sync_flag`, because Postgres refuses to change the type of a column used in a trigger definition. `drizzle-kit migrate` swallowed that error and printed nothing, so check the result with a query, not the command output.
+- `library_users.batch_id` stays a plain integer by decision: a `batches` table with an FK would reject new batch numbers in add-user and CSV import until someone created the batch. Dev has 8 distinct values (0, 5, 6, 7, 8, 10, 11, 12).
 
 ## Operational issues
 
