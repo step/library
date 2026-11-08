@@ -1,4 +1,4 @@
-import { pgTable, index, serial, integer, varchar, text, bigint, foreignKey, timestamp, unique, boolean, primaryKey, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, check, index, serial, integer, varchar, text, bigint, foreignKey, timestamp, unique, boolean, primaryKey, uniqueIndex } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -24,7 +24,7 @@ export const accounts = pgTable("accounts", {
 
 export const borrowedBooks = pgTable("borrowed_books", {
 	id: serial().primaryKey().notNull(),
-	bookCopyId: integer("book_copy_id"),
+	bookCopyId: integer("book_copy_id").notNull(),
 	userId: integer("user_id").notNull(),
 	borrowedAt: timestamp("borrowed_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
 	returnedAt: timestamp("returned_at", { mode: 'string' }),
@@ -93,8 +93,8 @@ export const books = pgTable("books", {
 	authors: text().notNull(),
 	isbn10: varchar({ length: 10 }),
 	isbn13: varchar({ length: 13 }),
-	count: integer().default(0),
-	borrowedCount: integer("borrowed_count").default(0),
+	count: integer().default(0).notNull(),
+	borrowedCount: integer("borrowed_count").default(0).notNull(),
 }, (table) => [
 	index("idx_books_id_title").using("btree", table.id.asc().nullsLast(), table.title.asc().nullsLast()),
 	index("idx_books_isbn10").using("btree", table.isbn10.asc().nullsLast()),
@@ -103,13 +103,15 @@ export const books = pgTable("books", {
 	index("idx_books_title_gin").using("gin", table.title.asc().nullsLast().op("gin_trgm_ops")),
 	unique("books_isbn10_key").on(table.isbn10),
 	unique("books_isbn13_key").on(table.isbn13),
+	check("books_counts_check", sql`borrowed_count >= 0 AND borrowed_count <= count`),
+	check("books_has_isbn_check", sql`isbn10 IS NOT NULL OR isbn13 IS NOT NULL`),
 ]);
 
 export const bookCopies = pgTable("book_copies", {
 	id: serial().primaryKey().notNull(),
-	bookId: integer("book_id"),
-	borrowed: boolean().default(false),
-	qrCode: text("qr_code"),
+	bookId: integer("book_id").notNull(),
+	borrowed: boolean().default(false).notNull(),
+	qrCode: text("qr_code").notNull(),
 }, (table) => [
 	index("idx_book_copies_book_id").using("btree", table.bookId.asc().nullsLast()),
 	index("idx_book_copies_borrowed").using("btree", table.borrowed.asc().nullsLast()),
