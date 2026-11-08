@@ -1,6 +1,6 @@
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { pool } from '../src/app/lib/db';
-import { BorrowedBook } from '../types/BorrowedBook';
+import { BorrowedBook, ReturnedBook } from '../types/BorrowedBook';
 import { BookCopy } from '../types/Book';
 
 type SQL = NeonQueryFunction<false, false>;
@@ -21,6 +21,26 @@ export const getBorrowedBooks = async (userId: number): Promise<BorrowedBook[]> 
         title: row.title,
         authors: row.authors,
         borrowedDate: row.borrowed_at
+    }));
+}
+
+export const getReturnedBooks = async (userId: number): Promise<ReturnedBook[]> => {
+    const sql = neon(`${process.env.DATABASE_URL}`);
+
+    const rows = await sql`SELECT bb.id, b.title, b.authors, bb.borrowed_at, bb.returned_at
+        FROM borrowed_books bb
+        JOIN book_copies bc ON bb.book_copy_id = bc.id
+        JOIN books b ON bc.book_id = b.id
+        WHERE bb.user_id = ${userId} AND bb.returned_at IS NOT NULL
+        ORDER BY bb.returned_at DESC;
+    `;
+
+    return rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        authors: row.authors,
+        borrowedDate: new Date(row.borrowed_at).toISOString(),
+        returnedDate: new Date(row.returned_at).toISOString()
     }));
 }
 

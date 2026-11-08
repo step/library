@@ -1,7 +1,7 @@
 import { Roboto } from 'next/font/google'
 import type { Metadata } from "next";
 import "./globals.css";
-import AppHeader from '../../components/AppHeader';
+import AppShell from '../../components/AppShell';
 import { getServerSession } from "next-auth";
 import { authOptions } from './lib/auth';
 import Login from '../../components/Login';
@@ -33,12 +33,13 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`${roboto.className}`}>
         {
-          !session ? <Login /> : <div className='app-container'>
-            <AppHeader />
+          !session ? <Login /> : (
             <SessionProviderWrapper>
-              <div className='app-child'>{children}</div>
+              <AppShell user={{ name: session.user?.name, email: session.user?.email, isAdmin: !!session.user?.isAdmin }}>
+                {children}
+              </AppShell>
             </SessionProviderWrapper>
-          </div>
+          )
         }
       </body>
     </html>

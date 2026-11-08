@@ -1,0 +1,54 @@
+/* App shell. Tokens: Tech Blue #22567C, EE Blue #1795D4, Dark Data #212526, Slate neutrals. */
+.sh-app { min-height: 100vh; display: flex; background: #F1F5F9; color: #212526; letter-spacing: 0.01em; font-size: 16px; line-height: 24px; }
+.sh-app *, .sh-app *::before, .sh-app *::after { box-sizing: border-box; }
+.sh-app button { font-family: inherit; letter-spacing: inherit; cursor: pointer; }
+.sh-app a { text-decoration: none; }
+.sh-app :focus-visible { outline: 2px solid #1795D4; outline-offset: 2px; }
+.sh-app svg { flex: none; }
+.sh-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sh-content { width: 100%; padding-bottom: 168px; }
+
+.sh-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.sh-mark { width: 32px; height: 32px; border-radius: 6px; background: #22567C; color: #fff; display: flex; align-items: center; justify-content: center; }
+
+/* Sidebar (tablet and up) */
+.sh-side { display: none; width: 208px; flex: none; position: sticky; top: 0; height: 100vh; background: #22567C; color: #fff; flex-direction: column; justify-content: space-between; padding: 20px 12px; }
+.sh-side .sh-mark { background: #fff; color: #22567C; }
+.sh-side-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 24px; }
+.sh-nav { width: 100%; height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 12px; border-radius: 6px; color: #E6EEF4; font-size: 15px; font-weight: 500; }
+.sh-nav:hover { background: rgba(255, 255, 255, 0.14); }
+.sh-nav.is-active { background: #fff; color: #22567C; }
+.sh-user { display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.24); }
+.sh-user-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sh-avatar { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #22567C; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: none; }
+.sh-user-text { display: flex; flex-direction: column; min-width: 0; }
+.sh-user-name { font-size: 14px; font-weight: 500; line-height: 20px; }
+.sh-user-mail { font-size: 12px; line-height: 16px; color: #D3E2ED; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sh-signout { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.45); background: transparent; color: #fff; font-size: 14px; font-weight: 500; }
+.sh-signout:hover { background: rgba(255, 255, 255, 0.14); }
+
+/* Mobile top bar and tab bar */
+.sh-top { position: sticky; top: 0; z-index: 10; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; background: #fff; border-bottom: 1px solid #E2E8F0; }
+.sh-top .sh-brand { font-size: 17px; }
+.sh-avatar-btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0; }
+.sh-avatar-btn .sh-avatar { background: #22567C; color: #fff; }
+.sh-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; height: 64px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: #fff; border-top: 1px solid #E2E8F0; padding-bottom: env(safe-area-inset-bottom, 0); }
+.sh-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #475569; font-size: 12px; line-height: 16px; font-weight: 500; min-height: 44px; }
+.sh-tab-pill { width: 56px; height: 28px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.sh-tab.is-active { color: #22567C; font-weight: 600; }
+.sh-tab.is-active .sh-tab-pill { background: #DCEEF8; }
+
+/* Scan button (rendered by the Scanner component) */
+.sh-fab { position: fixed; right: 16px; bottom: 80px; z-index: 30; height: 56px; padding: 0 22px 0 16px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 28px; background: #22567C; color: #fff; font-family: inherit; font-size: 16px; font-weight: 500; box-shadow: 0 6px 16px rgba(33, 37, 38, 0.28); cursor: pointer; }
+.sh-fab:hover { background: #1B4666; }
+
+@media (min-width: 768px) {
+  .sh-side { display: flex; }
+  .sh-top, .sh-bottom { display: none; }
+  .sh-content { padding-bottom: 120px; }
+  .sh-fab { right: 28px; bottom: 28px; }
+}
+@media (min-width: 1200px) {
+  .sh-side { width: 264px; padding: 24px 16px; }
+  .sh-fab { right: 40px; bottom: 32px; }
+}

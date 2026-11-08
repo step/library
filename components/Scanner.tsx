@@ -16,19 +16,28 @@ type ScannerProps = {
     onScanError: (error: string) => void;
     title?: string;
     className?: string;
+    /** Render the app's floating "Scan QR" button instead of the compact primary button. */
+    fab?: boolean;
 }
 
-const Scanner = ({ onScanResult, onScanError, className = "", title = "Scan" }: ScannerProps) => {
+const Scanner = ({ onScanResult, onScanError, className = "", title = "Scan", fab = false }: ScannerProps) => {
     const [showScanner, setShowScanner] = useState(false);
     const toggleShowScanner = () => setShowScanner(!showScanner);
 
     return (
         <div>
-            <div className={className}>
-                <PrimaryButton onClick={toggleShowScanner} title={title}>
-                    <QrCodeIcon size={22} />
-                </PrimaryButton>
-            </div>
+            {fab ? (
+                <button className="sh-fab" onClick={toggleShowScanner} aria-label="Scan QR code">
+                    <QrCodeIcon size={24} aria-hidden="true" />
+                    <span>Scan QR</span>
+                </button>
+            ) : (
+                <div className={className}>
+                    <PrimaryButton onClick={toggleShowScanner} title={title}>
+                        <QrCodeIcon size={22} />
+                    </PrimaryButton>
+                </div>
+            )}
             <BarcodeScanner
                 onResult={(scanResult) => {
                     toggleShowScanner();

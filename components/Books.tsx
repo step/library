@@ -1,14 +1,12 @@
 "use client";
 import React, { useCallback, Suspense, useMemo } from 'react';
-import { Lexend } from 'next/font/google';
+import { lexend } from '../src/app/lib/fonts';
 import "../styles/Books.css";
 import { Book } from '../types/Book';
 import Searchbar from './Searchbar';
 import AsyncSearchResults from './AsyncSearchResults';
 import BookListSkeleton from './BookListSkeleton';
 import { useBookSearch, useVirtualScroll } from '../hooks';
-
-const lexend = Lexend({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-lexend' });
 
 interface BooksProps {
     books: Book[];

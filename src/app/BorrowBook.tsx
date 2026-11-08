@@ -30,7 +30,7 @@ const BorrowBook = () => {
             <Scanner
                 onScanResult={processBorrowBook}
                 onScanError={handleScanError}
-                className="floating-actions"
+                fab
             />
             <Snackbar
                 message={snackbar.message}

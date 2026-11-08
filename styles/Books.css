@@ -13,6 +13,7 @@
 
 .bk-h1 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.02em; }
 .bk-sub { margin: 4px 0 0; font-size: 14px; line-height: 20px; color: #475569; }
+.bk-count { margin: 16px 0 0; font-size: 14px; line-height: 20px; color: #475569; }
 
 .bk-search { position: relative; display: block; margin-top: 16px; }
 .bk-search-icon { position: absolute; left: 14px; top: 14px; color: #475569; pointer-events: none; }
@@ -34,7 +35,8 @@
 @keyframes bk-spin { to { transform: rotate(360deg); } }
 
 /* List: cards on mobile, table on tablet and up */
-.bk-table { margin-top: 16px; }
+.bk-table { margin-top: 12px; }
+.bk-list { list-style: none; margin: 0; padding: 0; }
 .bk-thead { display: none; }
 .bk-scroll { height: calc(100vh - 290px); min-height: 320px; }
 
@@ -46,6 +48,9 @@
   background: #fff;
   border: 1px solid #E2E8F0;
 }
+.bk-row.bk-cols-reading { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bk-row.bk-cols-history { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bk-val { font-size: 15px; line-height: 24px; font-weight: 500; }
 .bk-ttl { grid-column: 1 / -1; padding-bottom: 12px; min-width: 0; }
 .bk-t { font-size: 16px; line-height: 22px; font-weight: 500; letter-spacing: -0.005em; }
 .bk-a { margin-top: 2px; font-size: 14px; line-height: 20px; color: #475569; }
@@ -83,10 +88,16 @@
   .bk-stat { padding: 0; border-top: 0; gap: 0; }
   .bk-lbl { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
   .bk-num { font-size: 15px; font-weight: 500; }
+  .bk-val { font-size: 14px; }
+  .bk-thead.bk-cols-reading, .bk-row.bk-cols-reading { grid-template-columns: minmax(0, 1fr) 128px 128px; }
+  .bk-thead.bk-cols-history, .bk-row.bk-cols-history { grid-template-columns: minmax(0, 1fr) 112px 112px 100px; }
 }
 
 @media (min-width: 1200px) {
   .bk-page { padding: 40px 40px 0; }
   .bk-h1 { font-size: 32px; line-height: 40px; }
   .bk-thead, .bk-row { column-gap: 24px; grid-template-columns: minmax(0, 1fr) 72px 96px 160px; }
+  .bk-thead.bk-cols-reading, .bk-row.bk-cols-reading { grid-template-columns: minmax(0, 1fr) 168px 168px; }
+  .bk-thead.bk-cols-history, .bk-row.bk-cols-history { grid-template-columns: minmax(0, 1fr) 150px 150px 140px; }
+  .bk-val { font-size: 15px; }
 }

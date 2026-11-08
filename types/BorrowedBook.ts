@@ -6,6 +6,10 @@ export type BorrowedBook = {
 };
 
 
+export type ReturnedBook = BorrowedBook & {
+    returnedDate: string;
+};
+
 export type BorrowedBookWithUser = {
     id: number;
     title: string;

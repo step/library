@@ -36,7 +36,7 @@ const ReturnBook = () => {
             <Scanner
                 onScanResult={handleReturnBook}
                 onScanError={handleScanError}
-                className="floating-actions"
+                fab
             />
             <Snackbar
                 message={snackbar.message}

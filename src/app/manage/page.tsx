@@ -1,6 +1,5 @@
 "use client";
 import { BookOpenCheckIcon, CopyPlusIcon, UsersIcon } from "lucide-react";
-import StickyFooter from "../../../components/StickyFooter";
 
 type ListProps = {
     label: string;
@@ -28,7 +27,7 @@ const ListItem = (props: ListProps) => {
 
 export default function ManagePage() {
     return (
-        <div style={{ paddingBottom: '80px', margin: '16px 0px 0px 16px', }}>
+        <div style={{ margin: '16px 0px 0px 16px' }}>
             <div>
                 <h6 className="page-title">Manage Your Library</h6>
             </div>
@@ -58,8 +57,6 @@ export default function ManagePage() {
                     href="/manage/users"
                 />
             </div>
-
-            <StickyFooter activeTab="books" allowManagement/>
         </div>
     );
 }
