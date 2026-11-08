@@ -40,8 +40,7 @@ export const getAllBorrowedBooks = async (): Promise<BorrowedBookWithUser[]> => 
 }
 
 export const forceReturnBook = async (
-    borrowedBookId: number,
-    bookCopyId: number
+    borrowedBookId: number
 ): Promise<{ success: boolean; message: string }> => {
     const client = await pool.connect();
 
@@ -55,21 +54,7 @@ export const forceReturnBook = async (
             WHERE id = $1
         `, [borrowedBookId]);
 
-        // Flip the copy to not-borrowed; only decrement borrowed_count if it was actually borrowed
-        const copyResult = await client.query(`
-            UPDATE book_copies
-            SET borrowed = FALSE
-            WHERE id = $1 AND borrowed = TRUE
-            RETURNING book_id
-        `, [bookCopyId]);
-
-        if (copyResult.rows.length > 0) {
-            await client.query(`
-                UPDATE books
-                SET borrowed_count = GREATEST(borrowed_count - 1, 0)
-                WHERE id = $1
-            `, [copyResult.rows[0].book_id]);
-        }
+        // book_copies.borrowed and books.borrowed_count are maintained by triggers on borrowed_books.
 
         await client.query('COMMIT');
 

@@ -104,13 +104,8 @@ const addCopies = async (sql: SQL, bookId: number, copies: string[]) => {
             ON CONFLICT (qr_code) DO NOTHING
         `;
     }
-    if (copies.length > 0) {
-        await sql`
-            UPDATE books 
-            SET count = count + ${copies.length} 
-            WHERE id = ${bookId}
-        `;
-    }
+    // books.count is maintained by the sync_book_counts trigger on book_copies,
+    // so copies skipped by ON CONFLICT are not counted.
 }
 
 export const onboardBook = async (req: OnboardBookReqBody) => {

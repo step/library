@@ -8,7 +8,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 |---|---|---|
 | 1 | `borrowed_books.user_id` has no FK | **DONE** (`0003_borrowed_books_user_fk`) |
 | 2 | Copy can be double-borrowed | **DONE** (`0001_one_open_loan_per_copy`) |
-| 3 | Redundant state | open |
+| 3 | Redundant state | **DONE** (`0004_sync_book_counts`, `0005_sync_copy_borrowed_flag`) |
 | 4 | Missing constraints | **DONE** (`0002_not_null_and_checks`) |
 | 5 | Two user systems | open |
 | 6 | Redundant indexes | open |
@@ -61,6 +61,13 @@ Whether a copy is borrowed is recorded in three places:
 `books.count` likewise duplicates the number of `book_copies` rows. Only application code keeps these in sync, so a partial failure or manual edit makes them drift.
 
 **Fix:** derive the counts (`COUNT(*) FILTER (WHERE ...)`), or keep them and add a trigger plus `CHECK (borrowed_count BETWEEN 0 AND count)`.
+
+**Status: DONE.** Migration `drizzle/0004_sync_book_counts.sql`, executed on `library-dev`.
+- Trigger `trg_book_copies_sync_counts` on `book_copies` sets `books.count` to the number of copy rows and `books.borrowed_count` to the number flagged borrowed.
+- `borrowBook`, `returnBook` and `addCopies` no longer update the counts by hand. This also fixes `addCopies` over-counting when `ON CONFLICT DO NOTHING` skips a copy.
+- Data repair: cleared the stale `borrowed` flag on copies 319 and 324 (no open loan; Pruthvi returned 319 on 2025-12-22), then recomputed both counts for every book. 15 books had `count` above their copy rows, for example book 155 is now 0.
+- Migration `drizzle/0005_sync_copy_borrowed_flag.sql`, executed on `library-dev`, adds trigger `trg_borrowed_books_sync_flag` on `borrowed_books`. `book_copies.borrowed` is now derived: a copy is borrowed exactly when it has an open loan. The two triggers chain, so a loan insert or return updates the flag and then both counts.
+- `borrowBook`, `returnBook` and `forceReturnBook` (`src/app/manage/borrowed-books/action.ts`) only write `borrowed_books` now. `forceReturnBook` lost its unused `bookCopyId` parameter.
 
 ### 4. Missing constraints
 

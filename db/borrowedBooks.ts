@@ -90,19 +90,7 @@ export const borrowBook = async (userId: number, qrCode: string): Promise<Borrow
 
         const borrowedBookId = borrowResult.rows[0].id;
 
-        // 3. Update book_copies table to mark as borrowed
-        await client.query(`
-            UPDATE book_copies 
-            SET borrowed = TRUE 
-            WHERE id = $1
-        `, [bookCopy.id]);
-
-        // 4. Update books table to increment borrowed_count
-        await client.query(`
-            UPDATE books 
-            SET borrowed_count = borrowed_count + 1 
-            WHERE id = $1
-        `, [bookCopy.book_id]);
+        // book_copies.borrowed (and books.borrowed_count) are maintained by triggers on borrowed_books.
 
         // Commit transaction
         await client.query('COMMIT');
@@ -189,19 +177,7 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
             return { success: false, message: 'You have not borrowed this book' };
         }
 
-        // 3. Update book_copies table
-        await client.query(`
-            UPDATE book_copies
-            SET borrowed = FALSE
-            WHERE id = $1
-        `, [bookCopy.id]);
-
-        // 4. Update books table
-        await client.query(`
-            UPDATE books
-            SET borrowed_count = borrowed_count - 1
-            WHERE id = $1
-        `, [bookCopy.book_id]);
+        // book_copies.borrowed (and books.borrowed_count) are maintained by triggers on borrowed_books.
 
         await client.query('COMMIT');
         return { success: true, message: 'Book returned successfully' };

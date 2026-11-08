@@ -23,7 +23,7 @@ const BorrowedBookRow = ({
 
     const handleReturn = () => {
         startTransition(async () => {
-            const result = await forceReturnBook(book.id, book.bookCopyId);
+            const result = await forceReturnBook(book.id);
             if (result.success) {
                 showSuccess(result.message);
                 setTimeout(() => onReturned(book.id), 1000);

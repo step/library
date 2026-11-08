@@ -29,6 +29,20 @@
       "when": 1794164530125,
       "tag": "0003_borrowed_books_user_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794166659306,
+      "tag": "0004_sync_book_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794166789077,
+      "tag": "0005_sync_copy_borrowed_flag",
+      "breakpoints": true
     }
   ]
 }
