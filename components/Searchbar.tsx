@@ -1,16 +1,14 @@
 import { Search, Loader2 } from "lucide-react";
-import "../styles/Searchbar.css";
 
-const Searchbar = (props: { 
-    value: string; 
-    onChange: (s: string) => void; 
+const Searchbar = (props: {
+    value: string;
+    onChange: (s: string) => void;
     onSearch: () => void;
     isLoading?: boolean;
 }) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        props.onChange(value);
+        props.onChange(e.target.value);
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -18,24 +16,24 @@ const Searchbar = (props: {
             props.onSearch();
         }
     }
-    
+
     return (
-        <div className="search-bar">
+        <label className="bk-search">
+            <span className="bk-sr">Search books</span>
+            {props.isLoading ? (
+                <Loader2 className="bk-search-icon bk-spin" size={20} aria-hidden="true" />
+            ) : (
+                <Search className="bk-search-icon" size={20} aria-hidden="true" />
+            )}
             <input
-                type="text"
-                placeholder="Search..."
+                type="search"
+                placeholder="Search by title or author"
                 value={props.value}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                className="search-input"
                 disabled={props.isLoading}
             />
-            {props.isLoading ? (
-                <Loader2 className="search-icon animate-spin" size={20} />
-            ) : (
-                <Search className="search-icon" size={20} onClick={props.onSearch} />
-            )}
-        </div>
+        </label>
     )
 }
 

@@ -17,7 +17,7 @@ const BookListSkeleton: React.FC<BookListSkeletonProps> = ({
     className = '' 
 }) => {
     return (
-        <div className={`book-list-skeleton ${className}`}>
+        <div className={className}>
             {Array.from({ length: count }, (_, index) => (
                 <BookRowSkeleton key={`skeleton-${index}`} />
             ))}

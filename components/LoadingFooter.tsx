@@ -12,9 +12,7 @@ interface LoadingFooterProps {
 export const LoadingFooter: React.FC<LoadingFooterProps> = ({ context }) => {
     if (context.loadingMore) {
         return (
-            <h6 style={{ textAlign: "center" }}>
-                Loading More...
-            </h6>
+            <p className="bk-more">Loading more...</p>
         );
     }
 

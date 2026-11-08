@@ -2,41 +2,20 @@ import React from 'react';
 import '../styles/BookRowSkeleton.css';
 
 /**
- * Skeleton loader component that mimics the BookRow layout
- * Provides visual feedback while book data is loading
+ * Skeleton loader that mimics the BookRow layout
  */
 const BookRowSkeleton: React.FC = () => {
     return (
-        <div className="book-row skeleton-container">
-            {/* Book cover skeleton */}
-            <div className="book-row-cover">
-                <div className="skeleton skeleton-cover" />
+        <div className="bk-row" aria-hidden="true">
+            <div className="bk-ttl">
+                <span className="skeleton bk-skel bk-skel-t" />
+                <span className="skeleton bk-skel bk-skel-a" />
             </div>
-            
-            {/* Book details skeleton */}
-            <div className="book-row-details">
-                {/* Title skeleton - wider block */}
-                <div className="skeleton skeleton-title" />
-                
-                {/* Author skeleton - medium block */}
-                <div className="skeleton skeleton-author" />
-                
-                {/* Stats skeleton */}
-                <div className="book-row-stats">
-                    <div className="book-stat">
-                        <div className="skeleton skeleton-stat-label" />
-                        <div className="skeleton skeleton-stat-value" />
-                    </div>
-                    <div className="book-stat">
-                        <div className="skeleton skeleton-stat-label" />
-                        <div className="skeleton skeleton-stat-value" />
-                    </div>
-                    <div className="book-stat">
-                        <div className="skeleton skeleton-stat-label" />
-                        <div className="skeleton skeleton-stat-value" />
-                    </div>
+            {[0, 1, 2].map((i) => (
+                <div className="bk-stat" key={i}>
+                    <span className="skeleton bk-skel bk-skel-n" />
                 </div>
-            </div>
+            ))}
         </div>
     );
 };

@@ -1,12 +1,14 @@
 "use client";
 import React, { useCallback, Suspense, useMemo } from 'react';
-import "../styles/BookRow.css";
+import { Lexend } from 'next/font/google';
+import "../styles/Books.css";
 import { Book } from '../types/Book';
 import Searchbar from './Searchbar';
-import { SearchLoadingState } from './SearchLoadingState';
 import AsyncSearchResults from './AsyncSearchResults';
 import BookListSkeleton from './BookListSkeleton';
 import { useBookSearch, useVirtualScroll } from '../hooks';
+
+const lexend = Lexend({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-lexend' });
 
 interface BooksProps {
     books: Book[];
@@ -61,23 +63,37 @@ const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
         handleEndReached
     ]);
 
+    const clearSearch = useCallback(() => setSearchQuery(''), [setSearchQuery]);
+    const noResults = !isSearching && books.length === 0;
+
     return (
-        <div>
+        <div className={`bk-page ${lexend.variable}`}>
+            <h1 className="bk-h1">Books</h1>
+            <p className="bk-sub">Browse everything in the library.</p>
             <Searchbar 
                 value={searchQuery} 
                 onChange={setSearchQuery} 
                 onSearch={handleSearch}
                 isLoading={isSearching}
             />
-            <div className='books-container'>
-                <SearchLoadingState 
-                    isSearching={isSearching} 
-                    hasBooks={books.length > 0} 
-                />
-                <Suspense fallback={<BookListSkeleton count={8} />}>
-                    <AsyncSearchResults {...asyncSearchResultsProps} />
-                </Suspense>
-            </div>
+            {noResults ? (
+                <div className="bk-empty">
+                    <p className="bk-empty-t">No books match your search</p>
+                    <p className="bk-empty-s">Try a different title or author.</p>
+                    <button className="bk-btn-outline" onClick={clearSearch}>Clear search</button>
+                </div>
+            ) : (
+                <div className="bk-table">
+                    <div className="bk-thead" aria-hidden="true">
+                        <span>Title and author</span><span>Total</span><span>Borrowed</span><span>Available</span>
+                    </div>
+                    <div className="bk-scroll">
+                        <Suspense fallback={<BookListSkeleton count={8} />}>
+                            <AsyncSearchResults {...asyncSearchResultsProps} />
+                        </Suspense>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

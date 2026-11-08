@@ -28,8 +28,8 @@ export const VirtualizedBookList: React.FC<VirtualizedBookListProps> = React.mem
         await onEndReached();
     }, [loadingMore, books.length, onEndReached]);
 
-    const renderItem = useCallback((index: number, book: Book) => (
-        <BookRow key={book.id} book={book} index={index} />
+    const renderItem = useCallback((_index: number, book: Book) => (
+        <BookRow key={book.id} book={book} />
     ), []);
 
     return (

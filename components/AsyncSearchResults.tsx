@@ -1,7 +1,7 @@
 import React, { Suspense, memo } from 'react';
 import { Book } from '../types/Book';
 import AsyncBookList from './AsyncBookList';
-import SearchSkeleton from './SearchSkeleton';
+import BookListSkeleton from './BookListSkeleton';
 
 interface AsyncSearchResultsProps {
     books: Book[];
@@ -29,12 +29,12 @@ export const AsyncSearchResults: React.FC<AsyncSearchResultsProps> = memo(({
 }) => {
     // Show search skeleton when actively searching with no results
     if (isSearching && books.length === 0) {
-        return <SearchSkeleton />;
+        return <BookListSkeleton count={6} />;
     }
 
     // Show results with Suspense boundary
     return (
-        <Suspense fallback={<SearchSkeleton />}>
+        <Suspense fallback={<BookListSkeleton count={6} />}>
             <AsyncBookList
                 books={books}
                 lastScrollPosition={lastScrollPosition}
