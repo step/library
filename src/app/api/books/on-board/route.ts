@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { onboardBook } from "../../../../../db/books";
 import { invalidateBooksCache } from "../../../action";
+import { getLoggedInUser } from "../../../../../db/user";
 
 const createForbiddenResponse = (message: string) => {
     return new Response(
@@ -15,7 +16,11 @@ export const POST = async (req: NextRequest) => {
 
     try {
         // Require admin user for book onboarding
-        // const user = requireAdminUser(req.headers);
+        const user = await getLoggedInUser();
+        if (!user || !user.isAdmin) {
+            console.log(`[API] POST /api/books/on-board - Rejected non-admin request`);
+            return createForbiddenResponse("Only administrators can onboard books");
+        }
 
         const data = await req.json();
         const { title, authors, isbn10, isbn13, copies } = data;
@@ -25,8 +30,8 @@ export const POST = async (req: NextRequest) => {
         // Invalidate cache after successful book onboarding
         await invalidateBooksCache();
 
-        // const duration = Date.now() - startTime;
-        // console.log(`[API] POST /api/books/on-board - Success: Book "${title}" onboarded by ${user.email} in ${duration}ms`);
+        const duration = Date.now() - startTime;
+        console.log(`[API] POST /api/books/on-board - Success: Book "${title}" onboarded by ${user.email} in ${duration}ms`);
 
         return Response.json(
             { message: "Book onboarded successfully" },

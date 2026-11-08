@@ -4,8 +4,18 @@ import { neon } from '@neondatabase/serverless';
 import { pool } from '../../lib/db';
 import { revalidatePath } from 'next/cache';
 import { invalidateBooksCache } from '../../action';
+import { getLoggedInUser } from '../../../../db/user';
+
+// Server actions are callable directly over HTTP, so each one enforces admin access itself.
+const requireAdmin = async () => {
+    const user = await getLoggedInUser();
+    if (!user || !user.isAdmin) {
+        throw new Error('Access denied: administrators only');
+    }
+};
 
 export const getAllBorrowedBooks = async (): Promise<BorrowedBookWithUser[]> => {
+    await requireAdmin();
     const sql = neon(`${process.env.DATABASE_URL}`);
 
     // Optimized query with proper joins and indexes
@@ -42,6 +52,12 @@ export const getAllBorrowedBooks = async (): Promise<BorrowedBookWithUser[]> => 
 export const forceReturnBook = async (
     borrowedBookId: number
 ): Promise<{ success: boolean; message: string }> => {
+    try {
+        await requireAdmin();
+    } catch {
+        return { success: false, message: 'Only administrators can return books for others' };
+    }
+
     const client = await pool.connect();
 
     try {

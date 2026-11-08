@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../lib/auth';
 import './page.css';
-import Login from '@/components/Login';
+import { redirect } from 'next/navigation';
 
 export default async function ManagementLayout({
   children,
@@ -11,7 +11,7 @@ export default async function ManagementLayout({
   const session = await getServerSession(authOptions);
   const user = session?.user;
   if (!user || !user.isAdmin) {
-    return <Login />
+    redirect(user ? '/' : '/login');
   }
   return (
     <div>{children}</div>
