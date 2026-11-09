@@ -51,7 +51,8 @@ export const POST = async (req: NextRequest) => {
         return Response.json({ message: "User added successfully", user }, { status: 201 });
     } catch (error) {
         const duration = Date.now() - startTime;
-        if (error instanceof Error && error.message.includes('unique')) {
+        // 23505 = unique_violation. (Matching the message text broke on non-English servers.)
+        if ((error as { code?: string })?.code === '23505') {
             return Response.json({ error: "User with this email already exists" }, { status: 409 });
         }
         console.error(`[API] POST /api/users - Error after ${duration}ms:`, error);

@@ -29,6 +29,14 @@ These look like real defects. Write a failing test that pins the intended behavi
 | F16 | `utils/dateUtils.formatBorrowDate` | Dead code: nothing imports it (checked with grep). It duplicates `formatTimeSince` with different rounding. Delete it rather than test it. | Delete the function; mutation score then ignores it. |
 | F17 | `src/app/api/book/books-archeive.ts` | `findBook` runs Google and Open Library in parallel, but if either `fetch` rejects or returns non-JSON the whole lookup throws and the working one is discarded. `data.items[0]` is read when `totalItems` is missing. | One API fails, other succeeds -> expect book returned. |
 | F19 ✅ fixed | `src/app/api/reading/route.ts` | Used `session.user.id`, but the session callback never sets an id, so the query ran with `undefined` and `GET /api/reading` returned nothing. Now uses `getLoggedInUser()`. | Matrix test: member id reaches `getBorrowedBooks`. |
+| F6 ✅ fixed | `db/borrowedBooks.ts` `returnBook` | Matched the user's newest loan even if already returned, so a user who had returned a copy that someone else now held got "Book returned successfully" and nothing changed. Now only an open loan can be closed. | Integration: old holder cannot return it after the next person borrows. |
+| F7 ✅ fixed | `manage/borrowed-books/action.ts` | Unknown loan id reported success. Now `Borrow record not found`. | Integration. |
+| F9 ✅ fixed | `db/books.ts`, `src/app/action.ts` | `%`, `_` and `\` were LIKE wildcards in search. New `containsPattern` escapes them. | Integration. |
+| F11 ✅ fixed | `api/users/route.ts` | Duplicate email detected by message text, now by code 23505. | Route unit test. |
+| F13 ✅ fixed | `api/users/[id]/route.ts` | `ON DELETE RESTRICT` raises **23001**, the route only handled 23503, so deleting a user with history gave 500 instead of 409. | Integration + route test. |
+| F20 ✅ fixed | trigger `sync_book_counts` | Lost update: parallel borrows of different copies of one book left `borrowed_count` too low (6 parallel borrows -> 1). Migration `0009` locks the book row (`FOR NO KEY UPDATE`; plain `FOR UPDATE` deadlocked with FK locks). | Integration concurrency test. |
+| F21 ✅ fixed | `db/books.ts` `onboardBook` | A request with a new ISBN 10 but an existing ISBN 13 crashed (unique violation); two admins adding the same new book at once made one fail. | Integration. |
+| F22 open | `api/users/[id]` PATCH | A body without `isAdmin` demotes the user (`!!undefined`). Needs validation. | Route test pins it today. |
 | F18 | `manage/layout.tsx` | Redirects, but the nested pages (`users/page.tsx` and others) fetch before the layout runs in some cases (layouts and pages render in parallel). The data functions must enforce admin themselves. `getAllLibraryUsers` and `getAllBorrowedBooks` partly do. | Page-level test as non-admin: no data fetched. |
 
 ## 1. Test infrastructure (do first)
@@ -97,6 +105,8 @@ Freeze time with `vi.useFakeTimers()` and `vi.setSystemTime`.
 - [ ] Every `M..h1v1h-1z` coordinate is within `[0,size)`.
 
 ## 3. Data layer (`db/*`, `action.ts`, `manage/*/action.ts`)
+
+**Status: done** (131 integration tests, `npm run test:integration`, needs `docker compose up -d postgres`). They run the real app functions against a throw-away `library_test` database on the compose Postgres, with a small `pg`-backed stand-in for the Neon driver (`test/integration/pgNeon.ts`). Unit-level mocked variants of these files are not needed. Still open: `loadBooks` edge cases and the mocked-pool failure paths (ROLLBACK itself throwing).
 
 Two levels. **Unit** (mocked `neon` / `pool`) checks SQL parameters, branching and error handling. **Integration** (real Postgres) checks triggers, constraints and transactions. Both are needed: triggers (`sync_book_counts`, `sync_copy_borrowed_flag`) cannot be tested with mocks.
 
@@ -271,7 +281,7 @@ Tool: **StrykerJS** with `@stryker-mutator/vitest-runner` and the TypeScript che
 
 ## 12. Suggested order of work
 
-Progress: step 1 done (171 tests passing: login 10, authorisation matrix 53, return/borrow/on-board routes, on-board validator, auth callbacks).
+Progress: steps 1 to 3 done (337 unit + 131 integration tests). Step 1 done (171 tests passing: login 10, authorisation matrix 53, return/borrow/on-board routes, on-board validator, auth callbacks).
 
 1. Infrastructure (section 1) and the authorisation matrix test (section 4). Fix F1, F2, F3, F8.
 2. `dateUtils`, hooks, `parseCSV`, QR (section 2). Fast, high value, easy mutation wins.

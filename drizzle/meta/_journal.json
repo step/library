@@ -64,6 +64,13 @@
       "when": 1794167963775,
       "tag": "0008_nextauth_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794168500000,
+      "tag": "0009_lock_book_before_count_sync",
+      "breakpoints": true
     }
   ]
 }

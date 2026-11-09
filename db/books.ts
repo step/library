@@ -1,5 +1,6 @@
 import '@/app/lib/neon-local';
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
+import { containsPattern } from '../src/app/lib/like';
 import { Book } from '../types/Book';
 import { OnboardBookReqBody } from '../types/OnboardBookReqBody';
 
@@ -17,7 +18,7 @@ const getBooksFirstPage = async (sql: SQL, searchQuery: string, size: number): P
                 count,
                 borrowed_count as "borrowedCount"
             FROM books 
-            WHERE title ILIKE ${'%' + searchQuery + '%'}
+            WHERE title ILIKE ${containsPattern(searchQuery)}
             ORDER BY id 
             LIMIT ${size}
         `
@@ -49,7 +50,7 @@ const getBooksAfterCursor = async (sql: SQL, searchQuery: string, size: number, 
                 count,
                 borrowed_count as "borrowedCount"
             FROM books 
-            WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${'%' + searchQuery + '%'}
+            WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${containsPattern(searchQuery)}
             ORDER BY id 
             LIMIT ${size}
         `
@@ -79,11 +80,14 @@ export const getBooks = async (searchQuery: string, size: number, lastSeenId?: s
 }
 
 const findExistingBookId = async (sql: SQL, isbn10?: string, isbn13?: string): Promise<number | undefined> => {
-    const query = isbn10 ?
-        sql`SELECT id FROM books WHERE isbn10 = ${isbn10} LIMIT 1` :
-        sql`SELECT id FROM books WHERE isbn13 = ${isbn13} LIMIT 1`;
-
-    const rows = await query;
+    // Either ISBN identifies the book: a reprint may carry a new ISBN 10 but the same ISBN 13.
+    const rows = await sql`
+        SELECT id FROM books
+        WHERE (${isbn10 ?? null}::text IS NOT NULL AND isbn10 = ${isbn10 ?? null})
+           OR (${isbn13 ?? null}::text IS NOT NULL AND isbn13 = ${isbn13 ?? null})
+        ORDER BY id
+        LIMIT 1
+    `;
     return rows[0]?.id;
 }
 
@@ -109,10 +113,21 @@ const addCopies = async (sql: SQL, bookId: number, copies: string[]) => {
     // so copies skipped by ON CONFLICT are not counted.
 }
 
+const isUniqueViolation = (error: unknown) => (error as { code?: string })?.code === '23505';
+
 export const onboardBook = async (req: OnboardBookReqBody) => {
     const sql = neon(`${process.env.DATABASE_URL}`);
-    const existingBookId = await findExistingBookId(sql, req.isbn10, req.isbn13);
-    const bookId = existingBookId ?? await createBook(sql, req);
+    let bookId = await findExistingBookId(sql, req.isbn10, req.isbn13);
+    if (bookId === undefined) {
+        try {
+            bookId = await createBook(sql, req);
+        } catch (error) {
+            // Someone else created the same book between our lookup and our insert: use theirs.
+            if (!isUniqueViolation(error)) throw error;
+            bookId = await findExistingBookId(sql, req.isbn10, req.isbn13);
+            if (bookId === undefined) throw error;
+        }
+    }
 
     await addCopies(sql, bookId, req.copies);
 }

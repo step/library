@@ -65,11 +65,17 @@ export const forceReturnBook = async (
         await client.query('BEGIN');
 
         // Mark the borrow record as returned (preserve existing returned_at if already set)
-        await client.query(`
+        const updated = await client.query(`
             UPDATE borrowed_books
             SET returned_at = COALESCE(returned_at, CURRENT_TIMESTAMP)
             WHERE id = $1
+            RETURNING id
         `, [borrowedBookId]);
+
+        if (updated.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return { success: false, message: 'Borrow record not found' };
+        }
 
         // book_copies.borrowed and books.borrowed_count are maintained by triggers on borrowed_books.
 

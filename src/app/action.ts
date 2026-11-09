@@ -3,6 +3,7 @@ import { cache } from "react";
 import { revalidateTag, unstable_cache } from "next/cache";
 import "@/app/lib/neon-local";
 import { neon } from "@neondatabase/serverless";
+import { containsPattern } from "@/app/lib/like";
 import { Book } from "@/types/Book";
 
 // Cached version of loadBooks with React cache for request deduplication
@@ -39,7 +40,7 @@ export const loadBooksWithSearch = unstable_cache(
                         count,
                         borrowed_count as "borrowedCount"
                     FROM books 
-                    WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${'%' + searchQuery + '%'}
+                    WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${containsPattern(searchQuery)}
                     ORDER BY id 
                     LIMIT ${size}
                 `
@@ -69,7 +70,7 @@ export const loadBooksWithSearch = unstable_cache(
                         count,
                         borrowed_count as "borrowedCount"
                     FROM books 
-                    WHERE title ILIKE ${'%' + searchQuery + '%'}
+                    WHERE title ILIKE ${containsPattern(searchQuery)}
                     ORDER BY id 
                     LIMIT ${size}
                 `

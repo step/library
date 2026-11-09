@@ -63,7 +63,9 @@ export const DELETE = async (_req: NextRequest, { params }: { params: Promise<{ 
         const duration = Date.now() - startTime;
         console.error(`[API] DELETE /api/users/${id} - Error after ${duration}ms:`, error);
         // 23503 = foreign_key_violation: the user still has borrow history.
-        if ((error as { code?: string })?.code === "23503") {
+        // ON DELETE RESTRICT raises 23001; a plain foreign key violation is 23503.
+        const code = (error as { code?: string })?.code;
+        if (code === "23001" || code === "23503") {
             return Response.json(
                 { error: "User has borrowed books and cannot be deleted" },
                 { status: 409 }

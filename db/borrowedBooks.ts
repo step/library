@@ -180,16 +180,12 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
         }
 
         // 2. Update borrowed_books table
+        // Only the user's open loan can be closed. (Matching an already-returned loan used to report
+        // success to someone who had returned the copy earlier while another person now held it.)
         const updateBorrowedResult = await client.query(`
             UPDATE borrowed_books
-            SET returned_at = COALESCE(returned_at, CURRENT_TIMESTAMP)
-            WHERE book_copy_id = $1 AND user_id = $2
-              AND id = (
-                SELECT id FROM borrowed_books
-                WHERE book_copy_id = $1 AND user_id = $2
-                ORDER BY borrowed_at DESC
-                LIMIT 1
-              )
+            SET returned_at = CURRENT_TIMESTAMP
+            WHERE book_copy_id = $1 AND user_id = $2 AND returned_at IS NULL
             RETURNING id
         `, [bookCopy.id, userId]);
 
