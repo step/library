@@ -1,92 +1,90 @@
 "use client";
 
-import { useState, useTransition } from 'react';
+import { useState } from "react";
+import { Search } from "lucide-react";
 import { BorrowedBookWithUser } from "@/types/BorrowedBook";
-import BookCover from "@/components/BookCover";
-import "@/styles/BookRow.css";
-import { formatBorrowDate } from "@/utils/dateUtils";
+import { formatShortDate, formatTimeSince } from "@/utils/dateUtils";
 import { forceReturnBook } from "./action";
 import { useSnackbar } from "@/utils/useSnackbar";
 import Snackbar from "@/components/Snackbar";
 
-const BorrowedBookRow = ({
-    book,
-    index,
-    onReturned,
-}: {
-    book: BorrowedBookWithUser;
-    index: number;
-    onReturned: (id: number) => void;
-}) => {
-    const [isPending, startTransition] = useTransition();
+const BorrowedBooks = ({ borrowedBooks }: { borrowedBooks: BorrowedBookWithUser[] }) => {
+    const [books, setBooks] = useState(borrowedBooks);
+    const [query, setQuery] = useState("");
+    const [pendingId, setPendingId] = useState<number | null>(null);
     const { snackbar, showSuccess, showError, close } = useSnackbar();
 
-    const handleReturn = () => {
-        startTransition(async () => {
-            const result = await forceReturnBook(book.id);
-            if (result.success) {
-                showSuccess(result.message);
-                setTimeout(() => onReturned(book.id), 1000);
-            } else {
-                showError(result.message);
-            }
-        });
+    const q = query.trim().toLowerCase();
+    const visible = books.filter(b =>
+        !q || `${b.title} ${b.authors} ${b.borrowerName} ${b.borrowerEmail}`.toLowerCase().includes(q)
+    );
+
+    const handleReturn = async (book: BorrowedBookWithUser) => {
+        if (pendingId !== null) return;
+        setPendingId(book.id);
+        const result = await forceReturnBook(book.id);
+        setPendingId(null);
+        if (result.success) {
+            setBooks(prev => prev.filter(b => b.id !== book.id));
+            showSuccess(result.message);
+        } else {
+            showError(result.message);
+        }
     };
+
+    const countText = q
+        ? `${visible.length} of ${books.length} borrowed`
+        : `${books.length} ${books.length === 1 ? "book" : "books"} borrowed`;
 
     return (
         <>
-            <div className="book-row">
-                <div className="book-row-cover">
-                    <BookCover title={book.title} author={book.authors} index={index} />
-                </div>
-                <div className="book-row-details">
-                    <div className="book-row-title-author">
-                        <h6 className="book-row-title">{book.title}</h6>
-                        <p className="book-row-author">by {book.authors}</p>
+            <label className="mg-search">
+                <span className="mg-sr">Search borrowed books</span>
+                <Search size={20} aria-hidden="true" />
+                <input type="search" placeholder="Search by title, author or person" value={query} onChange={e => setQuery(e.target.value)} />
+            </label>
+            <p className="mg-count">{countText}</p>
+
+            {visible.length > 0 && (
+                <div className="mg-table">
+                    <div className="mg-thead mg-cols-borrowed" aria-hidden="true">
+                        <span>Title and author</span><span>Borrowed by</span><span>Borrowed on</span><span className="mg-ta-r">Action</span>
                     </div>
-                    <div className="borrowed-book-details">
-                        <p>Borrowed by: {book.borrowerName}</p>
-                        <p>Borrowed on: {formatBorrowDate(book.borrowedDate)}</p>
-                    </div>
-                    <button
-                        className="force-return-btn"
-                        onClick={handleReturn}
-                        disabled={isPending}
-                    >
-                        {isPending ? 'Updating...' : 'Mark as Returned'}
-                    </button>
+                    <ul className="mg-list">
+                        {visible.map(book => (
+                            <li className="mg-row mg-cols-borrowed" key={book.id}>
+                                <div className="mg-ttl">
+                                    <div className="mg-t">{book.title}</div>
+                                    <div className="mg-a">{book.authors}</div>
+                                </div>
+                                <div className="mg-stat">
+                                    <span className="mg-lbl">Borrowed by</span>
+                                    <span className="mg-val">{book.borrowerName}</span>
+                                </div>
+                                <div className="mg-stat">
+                                    <span className="mg-lbl">Borrowed on</span>
+                                    <span className="mg-val">{formatShortDate(book.borrowedDate)}</span>
+                                    <span className="mg-ago">{formatTimeSince(book.borrowedDate)}</span>
+                                </div>
+                                <div className="mg-ract">
+                                    <button className="mg-btn-sm" disabled={pendingId !== null} aria-label={`Mark ${book.title} as returned`}
+                                        onClick={() => handleReturn(book)}>
+                                        {pendingId === book.id ? "Updating..." : "Mark returned"}
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
-            </div>
-            <Snackbar
-                isOpen={snackbar.isOpen}
-                message={snackbar.message}
-                type={snackbar.type}
-                onClose={close}
-            />
+            )}
+            {visible.length === 0 && (
+                <div className="mg-empty">
+                    <p className="mg-empty-t">{q ? "No borrowed books match your search" : "No books are currently borrowed"}</p>
+                    {q && <button className="mg-btn-outline" onClick={() => setQuery("")}>Clear search</button>}
+                </div>
+            )}
+            <Snackbar isOpen={snackbar.isOpen} message={snackbar.message} type={snackbar.type} onClose={close} />
         </>
-    );
-};
-
-const BorrowedBooks = ({ borrowedBooks }: { borrowedBooks: BorrowedBookWithUser[] }) => {
-    const [returnedIds, setReturnedIds] = useState<Set<number>>(new Set());
-
-    const handleReturned = (id: number) => {
-        setReturnedIds(prev => new Set([...prev, id]));
-    };
-
-    const visible = borrowedBooks.filter(b => !returnedIds.has(b.id));
-
-    return (
-        <div className="borrowed-books">
-            {visible.map((book, index) => (
-                <BorrowedBookRow
-                    key={book.id}
-                    book={book}
-                    index={index}
-                    onReturned={handleReturned}
-                />
-            ))}
-        </div>
     );
 };
 

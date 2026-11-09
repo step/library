@@ -1,4 +1,4 @@
-import Link from "next/link";
+import BackLink from "@/components/manage/BackLink";
 import { getAllLibraryUsers } from "../../../../db/user";
 import UsersManager from "./UsersManager";
 
@@ -6,13 +6,12 @@ const UsersPage = async () => {
     const users = await getAllLibraryUsers();
 
     return (
-        <div className="page-container">
-            <div>
-                <Link href="/manage" className="back-link">← Back</Link>
-                <h6 className="page-title">Manage Users</h6>
-            </div>
+        <>
+            <BackLink />
+            <h1 className="mg-h1">Manage users</h1>
+            <p className="mg-sub">Add people, import users in bulk and choose who can manage the library.</p>
             <UsersManager initialUsers={users} />
-        </div>
+        </>
     );
 }
 

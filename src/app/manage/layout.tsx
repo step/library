@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../lib/auth';
-import './page.css';
 import { redirect } from 'next/navigation';
+import { authOptions } from '../lib/auth';
+import { lexend } from '../lib/fonts';
+import '../../../styles/Manage.css';
 
 export default async function ManagementLayout({
   children,
@@ -14,6 +15,6 @@ export default async function ManagementLayout({
     redirect(user ? '/' : '/login');
   }
   return (
-    <div>{children}</div>
+    <div className={`mg-page ${lexend.variable}`}>{children}</div>
   );
 }

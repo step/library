@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { BookOpenText, History, Library, ListChecks, LogOut } from "lucide-react";
+import { BookOpenText, History, Library, LogOut, Users } from "lucide-react";
 import { lexend } from "../src/app/lib/fonts";
 import BorrowBook from "../src/app/BorrowBook";
 import ReturnBook from "../src/app/reading/ReturnBook";
@@ -23,7 +23,7 @@ const buildNav = (isAdmin: boolean): NavItem[] => {
         { label: "Past reads", href: "/history", icon: <History size={20} aria-hidden="true" />, match: (p) => p.startsWith("/history") },
     ];
     if (isAdmin) {
-        items.push({ label: "Manage", href: "/manage", icon: <ListChecks size={20} aria-hidden="true" />, match: (p) => p.startsWith("/manage") });
+        items.push({ label: "Manage", href: "/manage", icon: <Users size={20} aria-hidden="true" />, match: (p) => p.startsWith("/manage") });
     }
     return items;
 };

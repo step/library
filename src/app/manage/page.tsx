@@ -1,62 +1,50 @@
-"use client";
-import { BookOpenCheckIcon, CopyPlusIcon, UsersIcon } from "lucide-react";
+import Link from "next/link";
+import { BookPlus, ChevronRight, ClipboardList, QrCode, Users } from "lucide-react";
 
-type ListProps = {
-    label: string;
-    description: string;
-    icon: React.ReactNode;
-    href: string;
-}
-
-const ListItem = (props: ListProps) => {
-    return (
-        <div
-            className="list-item"
-            onClick={() => window.location.assign(props.href)}
-        >
-            <div className="item-icon">
-                {props.icon}
-            </div>
-            <div>
-                <span className="list-label">{props.label}</span>
-                <p className="list-description">{props.description}</p>
-            </div>
-        </div>
-    )
-}
+const TOOLS = [
+    {
+        href: "/manage/add-book",
+        title: "Add book",
+        description: "Add a title with a form, an ISBN scan or the QR code on a copy.",
+        icon: <BookPlus size={24} aria-hidden="true" />,
+    },
+    {
+        href: "/manage/generate-qr-code",
+        title: "Generate book QR codes",
+        description: "Make a printable sheet of QR codes to label new copies.",
+        icon: <QrCode size={24} aria-hidden="true" />,
+    },
+    {
+        href: "/manage/borrowed-books",
+        title: "View borrowed books",
+        description: "See who has which book, and mark a book as returned.",
+        icon: <ClipboardList size={24} aria-hidden="true" />,
+    },
+    {
+        href: "/manage/users",
+        title: "Manage users",
+        description: "Add people, import them from a CSV and set who is an admin.",
+        icon: <Users size={24} aria-hidden="true" />,
+    },
+];
 
 export default function ManagePage() {
     return (
-        <div style={{ margin: '16px 0px 0px 16px' }}>
-            <div>
-                <h6 className="page-title">Manage Your Library</h6>
+        <>
+            <h1 className="mg-h1">Manage</h1>
+            <p className="mg-sub">Admin tools for the library&apos;s books and members.</p>
+            <div className="mg-hub">
+                {TOOLS.map((tool) => (
+                    <Link key={tool.href} href={tool.href} className="mg-hubcard">
+                        <span className="mg-hub-ic">{tool.icon}</span>
+                        <span className="mg-hub-tx">
+                            <span className="mg-hub-t">{tool.title}</span>
+                            <span className="mg-hub-d">{tool.description}</span>
+                        </span>
+                        <ChevronRight className="mg-hub-go" size={20} aria-hidden="true" />
+                    </Link>
+                ))}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
-                <ListItem
-                    label="Add New Book"
-                    description="Add a new book to your library"
-                    icon={<CopyPlusIcon size={20} color="var(--main-color)" />}
-                    href="/manage/add-book"
-                />
-                <ListItem
-                    label="Generate Book QR Code"
-                    description="Generate a QR code for a book to easily share its details"
-                    icon={<CopyPlusIcon size={20} color="var(--main-color)" />}
-                    href="/manage/generate-qr-code"
-                />
-                <ListItem
-                    label="View All Borrowed Books"
-                    description="See all books currently borrowed by users"
-                    icon={<BookOpenCheckIcon size={20} color="var(--main-color)" />}
-                    href="/manage/borrowed-books"
-                />
-                <ListItem
-                    label="Manage Users"
-                    description="Add, remove, and update user roles"
-                    icon={<UsersIcon size={20} color="var(--main-color)" />}
-                    href="/manage/users"
-                />
-            </div>
-        </div>
+        </>
     );
 }

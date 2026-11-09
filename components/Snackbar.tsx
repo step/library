@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import "../styles/Snackbar.css";
+import { useEffect } from "react";
+import { AlertCircle, CheckCircle2, X } from "lucide-react";
+import "../styles/Manage.css";
 
 export interface SnackbarProps {
     message: string;
@@ -20,46 +20,22 @@ const Snackbar = ({
     duration = 4000,
     autoClose = true
 }: SnackbarProps) => {
-    const [isVisible, setIsVisible] = useState(false);
-
     useEffect(() => {
-        if (isOpen) {
-            setIsVisible(true);
-            
-            if (autoClose && duration > 0) {
-                const timer = setTimeout(() => {
-                    handleClose();
-                }, duration);
-
-                return () => clearTimeout(timer);
-            }
-        } else {
-            setIsVisible(false);
-        }
-    }, [isOpen, duration, autoClose]);
-
-    const handleClose = () => {
-        setIsVisible(false);
-        // Add a small delay before calling onClose to allow exit animation
-        setTimeout(() => {
-            onClose();
-        }, 300);
-    };
+        if (!isOpen || !autoClose || duration <= 0) return;
+        const timer = setTimeout(onClose, duration);
+        return () => clearTimeout(timer);
+    }, [isOpen, duration, autoClose, onClose]);
 
     if (!isOpen) return null;
 
+    const ok = type === "success";
     return (
-        <div className={`snackbar ${type} ${isVisible ? 'show' : ''}`}>
-            <div className="snackbar-content">
-                <span className="snackbar-message">{message}</span>
-                <button
-                    className="snackbar-close-btn"
-                    onClick={handleClose}
-                    aria-label="Close notification"
-                >
-                    <X size={16} />
-                </button>
-            </div>
+        <div className={`mg-toast ${ok ? "mg-toast-ok" : "mg-toast-err"}`} role={ok ? "status" : "alert"}>
+            {ok ? <CheckCircle2 size={20} aria-hidden="true" /> : <AlertCircle size={20} aria-hidden="true" />}
+            <span className="mg-toast-t">{message}</span>
+            <button className="mg-toast-x" onClick={onClose} aria-label="Dismiss notification">
+                <X size={18} aria-hidden="true" />
+            </button>
         </div>
     );
 };

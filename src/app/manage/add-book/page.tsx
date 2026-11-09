@@ -1,19 +1,13 @@
-import Link from "next/link";
-import Note from "@/components/Note";
-import './page.css';
+import BackLink from "@/components/manage/BackLink";
 import NewBookForm from "./NewBookForm";
 
-export default function ManagePage() {
+export default function AddBookPage() {
     return (
-        <div className="page-container">
-            <div>
-                <Link href="/manage" className="back-link">← Back</Link>
-                <h6 className="page-title">Add Book</h6>
-            </div>
-            <div className="form-container">
-                <Note message="Please fill the form OR scan code" />
-                <NewBookForm />
-            </div>
-        </div>
+        <>
+            <BackLink />
+            <h1 className="mg-h1">Add a book</h1>
+            <p className="mg-sub">Fill in the details, or scan to have them filled in for you.</p>
+            <NewBookForm />
+        </>
     );
 }

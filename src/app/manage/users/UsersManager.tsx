@@ -1,308 +1,312 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useRef, useState } from "react";
+import { CheckCircle2, Upload } from "lucide-react";
 import { User } from "@/types/User";
 import { useSnackbar } from "@/utils/useSnackbar";
 import Snackbar from "@/components/Snackbar";
-import "./users.css";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ConfirmDialog from "@/components/manage/ConfirmDialog";
+import FieldError from "@/components/manage/FieldError";
 
-type Props = {
-    initialUsers: User[];
+type CsvRow = { name: string; email: string; isAdmin: boolean; batchId: number };
+type Csv = { fileName: string; rows: CsvRow[]; skipped: number };
+type FormState = { name: string; email: string; batch: string; admin: boolean };
+type FormErrors = Partial<Record<"name" | "email" | "batch", string>>;
+
+const EMPTY_FORM: FormState = { name: "", email: "", batch: "", admin: false };
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+const parseCSV = (text: string): { rows: CsvRow[]; skipped: number } => {
+    const lines = text.trim().split("\n").filter(l => l.trim());
+    const rows: CsvRow[] = [];
+    let skipped = 0;
+    for (const line of lines) {
+        const parts = line.split(",").map(p => p.trim());
+        const [name, email, batchIdRaw, adminFlag] = parts;
+        const batchId = Number(batchIdRaw);
+        if (parts.length < 3 || !name || !email || !Number.isInteger(batchId)) {
+            skipped++;
+            continue;
+        }
+        rows.push({ name, email, batchId, isAdmin: adminFlag?.toLowerCase() === "true" });
+    }
+    return { rows, skipped };
 };
 
-const RoleBadge = ({ isAdmin }: { isAdmin: boolean }) => (
-    <span className={`role-badge ${isAdmin ? "role-admin" : "role-user"}`}>
-        {isAdmin ? "Admin" : "User"}
-    </span>
-);
-
-const AddUserForm = ({ onAdded }: { onAdded: (user: User) => void }) => {
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [batchId, setBatchId] = useState("");
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [isPending, startTransition] = useTransition();
-    const { snackbar, showSuccess, showError, close } = useSnackbar();
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name.trim() || !email.trim() || !batchId.trim()) return;
-
-        startTransition(async () => {
-            const res = await fetch("/api/users", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name.trim(), email: email.trim(), isAdmin, batchId: Number(batchId) }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                showSuccess("User added successfully");
-                onAdded(data.user);
-                setName("");
-                setEmail("");
-                setBatchId("");
-                setIsAdmin(false);
-            } else {
-                showError(data.error || "Failed to add user");
-            }
-        });
-    };
-
-    return (
-        <>
-            <form className="add-user-form" onSubmit={handleSubmit}>
-                <h6 className="section-title">Add Single User</h6>
-                <div className="add-user-fields">
-                    <input
-                        className="user-input"
-                        placeholder="Full name"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        required
-                        disabled={isPending}
-                    />
-                    <input
-                        className="user-input"
-                        placeholder="Email address"
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        required
-                        disabled={isPending}
-                    />
-                    <input
-                        className="user-input"
-                        placeholder="Batch ID"
-                        type="number"
-                        value={batchId}
-                        onChange={e => setBatchId(e.target.value)}
-                        required
-                        disabled={isPending}
-                    />
-                    <label className="admin-checkbox">
-                        <input
-                            type="checkbox"
-                            checked={isAdmin}
-                            onChange={e => setIsAdmin(e.target.checked)}
-                            disabled={isPending}
-                        />
-                        Admin
-                    </label>
-                    <button className="action-btn add-btn" type="submit" disabled={isPending}>
-                        {isPending ? "Adding..." : "Add User"}
-                    </button>
-                </div>
-            </form>
-            <Snackbar isOpen={snackbar.isOpen} message={snackbar.message} type={snackbar.type} onClose={close} />
-        </>
-    );
-};
-
-const BulkUpload = ({ onAdded }: { onAdded: (users: User[]) => void }) => {
-    const [isPending, startTransition] = useTransition();
-    const [preview, setPreview] = useState<{ name: string; email: string; isAdmin: boolean; batchId: number }[]>([]);
+export default function UsersManager({ initialUsers }: { initialUsers: User[] }) {
+    const [users, setUsers] = useState<User[]>(initialUsers);
+    const [form, setForm] = useState<FormState>(EMPTY_FORM);
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [csv, setCsv] = useState<Csv | null>(null);
+    const [summary, setSummary] = useState("");
+    const [adding, setAdding] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [pendingId, setPendingId] = useState<number | null>(null);
+    const [confirmUser, setConfirmUser] = useState<User | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const { snackbar, showSuccess, showError, close } = useSnackbar();
 
-    const parseCSV = (text: string) => {
-        const lines = text.trim().split("\n").filter(l => l.trim());
-        const parsed: { name: string; email: string; isAdmin: boolean; batchId: number }[] = [];
-        for (const line of lines) {
-            const parts = line.split(",").map(p => p.trim());
-            if (parts.length < 3) continue;
-            const [name, email, batchIdRaw, adminFlag] = parts;
-            const batchId = Number(batchIdRaw);
-            if (!name || !email || !Number.isInteger(batchId)) continue;
-            parsed.push({ name, email, batchId, isAdmin: adminFlag?.toLowerCase() === "true" });
+    const busy = adding || uploading || pendingId !== null;
+
+    const setField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        setForm({ ...form, [key]: key === "admin" ? e.target.checked : e.target.value });
+        if (key !== "admin") setErrors({ ...errors, [key]: undefined });
+    };
+
+    const handleAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (busy) return;
+        const email = form.email.trim();
+        const errs: FormErrors = {};
+        if (!form.name.trim()) errs.name = "Enter a name";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Enter a valid email address";
+        if (!/^[1-9][0-9]*$/.test(form.batch.trim())) errs.batch = "Enter a batch number, for example 12";
+        if (Object.keys(errs).length) {
+            setErrors(errs);
+            return;
         }
-        return parsed;
+        setAdding(true);
+        try {
+            const res = await fetch("/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: form.name.trim(), email, isAdmin: form.admin, batchId: Number(form.batch) }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setUsers(prev => [data.user, ...prev]);
+                setForm(EMPTY_FORM);
+                setErrors({});
+                showSuccess("User added");
+            } else if (res.status === 409) {
+                setErrors({ email: "A user with this email already exists." });
+            } else {
+                showError(data.error || "Failed to add user");
+            }
+        } catch {
+            showError("Failed to add user");
+        } finally {
+            setAdding(false);
+        }
     };
 
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        setSummary("");
         const reader = new FileReader();
         reader.onload = ev => {
-            const text = ev.target?.result as string;
-            setPreview(parseCSV(text));
+            const { rows, skipped } = parseCSV(String(ev.target?.result ?? ""));
+            if (rows.length === 0) {
+                setCsv(null);
+                showError("Bulk upload failed");
+                return;
+            }
+            setCsv({ fileName: file.name, rows, skipped });
         };
+        reader.onerror = () => showError("Bulk upload failed");
         reader.readAsText(file);
     };
 
-    const handleUpload = () => {
-        if (preview.length === 0) return;
-        startTransition(async () => {
+    const handleUpload = async () => {
+        if (!csv || busy) return;
+        setUploading(true);
+        try {
             const res = await fetch("/api/users/bulk", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ users: preview }),
+                body: JSON.stringify({ users: csv.rows }),
             });
             const data = await res.json();
             if (res.ok) {
-                showSuccess(data.message);
-                onAdded(data.users);
-                setPreview([]);
+                setUsers(prev => [...data.users, ...prev]);
+                const message = `${plural(data.added, "user")} added, ${data.skipped + csv.skipped} skipped.`;
+                setSummary(message);
+                showSuccess(message);
+                setCsv(null);
                 if (fileRef.current) fileRef.current.value = "";
             } else {
                 showError(data.error || "Bulk upload failed");
             }
-        });
+        } catch {
+            showError("Bulk upload failed");
+        } finally {
+            setUploading(false);
+        }
     };
 
-    return (
-        <>
-            <div className="bulk-upload">
-                <h6 className="section-title">Bulk Upload via CSV</h6>
-                <p className="csv-hint">CSV format: <code>name,email,batch_id,is_admin</code> (is_admin: true/false, optional)</p>
-                <div className="bulk-actions">
-                    <input
-                        ref={fileRef}
-                        type="file"
-                        accept=".csv,text/csv"
-                        onChange={handleFile}
-                        className="file-input"
-                        disabled={isPending}
-                    />
-                    {preview.length > 0 && (
-                        <button className="action-btn add-btn" onClick={handleUpload} disabled={isPending}>
-                            {isPending ? "Uploading..." : `Upload ${preview.length} user(s)`}
-                        </button>
-                    )}
-                </div>
-                {preview.length > 0 && (
-                    <div className="csv-preview">
-                        <p className="preview-label">{preview.length} user(s) ready to import:</p>
-                        {preview.slice(0, 5).map((u, i) => (
-                            <div key={i} className="preview-row">
-                                <span>{u.name}</span>
-                                <span className="preview-email">{u.email}</span>
-                                <span className="preview-batch">Batch {u.batchId}</span>
-                                {u.isAdmin && <span className="role-badge role-admin">Admin</span>}
-                            </div>
-                        ))}
-                        {preview.length > 5 && <p className="preview-more">+{preview.length - 5} more</p>}
-                    </div>
-                )}
-            </div>
-            <Snackbar isOpen={snackbar.isOpen} message={snackbar.message} type={snackbar.type} onClose={close} />
-        </>
-    );
-};
-
-const UserRow = ({
-    user,
-    onRoleToggled,
-    onDeleted,
-}: {
-    user: User;
-    onRoleToggled: (id: number, isAdmin: boolean) => void;
-    onDeleted: (id: number) => void;
-}) => {
-    const [isPending, startTransition] = useTransition();
-    const { snackbar, showSuccess, showError, close } = useSnackbar();
-
-    const handleToggle = () => {
-        startTransition(async () => {
+    const handleToggle = async (user: User) => {
+        if (busy) return;
+        setPendingId(user.id);
+        try {
             const res = await fetch(`/api/users/${user.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isAdmin: !user.isAdmin }),
             });
-            const data = await res.json();
             if (res.ok) {
-                onRoleToggled(user.id, !user.isAdmin);
-                showSuccess(`Role updated to ${!user.isAdmin ? "Admin" : "User"}`);
+                setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, isAdmin: !user.isAdmin } : u)));
+                showSuccess(`Role updated to ${user.isAdmin ? "User" : "Admin"}`);
             } else {
-                showError(data.error || "Failed to update role");
+                showError("Failed to update role");
             }
-        });
+        } catch {
+            showError("Failed to update role");
+        } finally {
+            setPendingId(null);
+        }
     };
 
-    const handleDelete = () => {
-        if (!confirm(`Remove ${user.name} from the library?`)) return;
-        startTransition(async () => {
+    const handleRemove = async () => {
+        const user = confirmUser;
+        if (!user) return;
+        setConfirmUser(null);
+        setPendingId(user.id);
+        try {
             const res = await fetch(`/api/users/${user.id}`, { method: "DELETE" });
-            const data = await res.json();
             if (res.ok) {
-                onDeleted(user.id);
+                setUsers(prev => prev.filter(u => u.id !== user.id));
+                showSuccess("User removed");
             } else {
-                showError(data.error || "Failed to delete user");
+                showError("Failed to delete user");
             }
-        });
+        } catch {
+            showError("Failed to delete user");
+        } finally {
+            setPendingId(null);
+        }
     };
 
     return (
         <>
-            <div className="user-row">
-                <div className="user-info">
-                    <span className="user-name">{user.name}</span>
-                    <span className="user-email">{user.email}</span>
-                    <span className="user-batch">Batch {user.batchId}</span>
+            <section className="mg-card" aria-labelledby="add-h">
+                <h2 className="mg-h2" id="add-h">Add a user</h2>
+                <form className="mg-form" onSubmit={handleAdd} noValidate>
+                    <div className="mg-field">
+                        <label className="mg-label" htmlFor="f-name">Name</label>
+                        <input id="f-name" className={`mg-input ${errors.name ? "is-invalid" : ""}`} type="text" autoComplete="off"
+                            aria-invalid={!!errors.name} aria-describedby="e-name" value={form.name} onChange={setField("name")} />
+                        <FieldError id="e-name" message={errors.name} />
+                    </div>
+                    <div className="mg-field">
+                        <label className="mg-label" htmlFor="f-email">Email</label>
+                        <input id="f-email" className={`mg-input ${errors.email ? "is-invalid" : ""}`} type="text" inputMode="email" autoComplete="off"
+                            aria-invalid={!!errors.email} aria-describedby="e-email" value={form.email} onChange={setField("email")} />
+                        <FieldError id="e-email" message={errors.email} />
+                    </div>
+                    <div className="mg-field">
+                        <label className="mg-label" htmlFor="f-batch">Batch</label>
+                        <input id="f-batch" className={`mg-input ${errors.batch ? "is-invalid" : ""}`} type="text" inputMode="numeric" autoComplete="off"
+                            aria-invalid={!!errors.batch} aria-describedby="e-batch" value={form.batch} onChange={setField("batch")} />
+                        <FieldError id="e-batch" message={errors.batch} />
+                    </div>
+                    <div className="mg-field mg-field-switch">
+                        <label className="mg-switch">
+                            <input type="checkbox" checked={form.admin} onChange={setField("admin")} />
+                            <span className="mg-track" aria-hidden="true"></span>
+                            <span>Make this user an admin</span>
+                        </label>
+                    </div>
+                    <div className="mg-form-actions">
+                        <button className="mg-btn" type="submit" disabled={busy}>{adding ? "Adding..." : "Add user"}</button>
+                    </div>
+                </form>
+            </section>
+
+            <section className="mg-card" id="bulk-card" aria-labelledby="bulk-h">
+                <h2 className="mg-h2" id="bulk-h">Bulk upload via CSV</h2>
+                <p className="mg-help">
+                    Choose a .csv file with the columns <code>name,email,batch_id,is_admin</code>. The is_admin column is optional (true or false).
+                    Rows with missing or invalid values are skipped.
+                </p>
+                <div className="mg-file-row">
+                    <label className="mg-btn-outline mg-file">
+                        <Upload size={18} aria-hidden="true" />
+                        <span>Choose CSV file</span>
+                        <input ref={fileRef} className="mg-sr" type="file" accept=".csv,text/csv" onChange={handleFile} disabled={busy} />
+                    </label>
+                    {csv && <span className="mg-fname">{csv.fileName}</span>}
                 </div>
-                <div className="user-actions">
-                    <RoleBadge isAdmin={user.isAdmin} />
-                    <button
-                        className="action-btn toggle-btn"
-                        onClick={handleToggle}
-                        disabled={isPending}
-                    >
-                        {isPending ? "..." : user.isAdmin ? "Make User" : "Make Admin"}
-                    </button>
-                    <button
-                        className="action-btn delete-btn"
-                        onClick={handleDelete}
-                        disabled={isPending}
-                    >
-                        Remove
-                    </button>
-                </div>
-            </div>
-            <Snackbar isOpen={snackbar.isOpen} message={snackbar.message} type={snackbar.type} onClose={close} />
-        </>
-    );
-};
-
-export default function UsersManager({ initialUsers }: Props) {
-    const [users, setUsers] = useState<User[]>(initialUsers);
-
-    const handleAdded = (user: User) => {
-        setUsers(prev => [user, ...prev]);
-    };
-
-    const handleBulkAdded = (newUsers: User[]) => {
-        setUsers(prev => [...newUsers, ...prev]);
-    };
-
-    const handleRoleToggled = (id: number, isAdmin: boolean) => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, isAdmin } : u));
-    };
-
-    const handleDeleted = (id: number) => {
-        setUsers(prev => prev.filter(u => u.id !== id));
-    };
-
-    return (
-        <div className="users-manager">
-            <AddUserForm onAdded={handleAdded} />
-            <BulkUpload onAdded={handleBulkAdded} />
-
-            <div className="users-list-section">
-                <h6 className="section-title">All Users ({users.length})</h6>
-                {users.length === 0 ? (
-                    <p className="empty-state">No users found.</p>
-                ) : (
-                    <div className="users-list">
-                        {users.map(user => (
-                            <UserRow
-                                key={user.id}
-                                user={user}
-                                onRoleToggled={handleRoleToggled}
-                                onDeleted={handleDeleted}
-                            />
-                        ))}
+                {csv && (
+                    <div className="mg-preview">
+                        <p className="mg-preview-h">{plural(csv.rows.length, "user")} ready to import</p>
+                        <ul className="mg-prev-list">
+                            {csv.rows.slice(0, 5).map((r, i) => (
+                                <li className="mg-prev-row" key={i}>
+                                    <div className="mg-prev-main">
+                                        <span className="mg-t">{r.name}</span>
+                                        <span className="mg-a mg-ellip">{r.email}</span>
+                                    </div>
+                                    <span className="mg-prev-batch">Batch {r.batchId}</span>
+                                    {r.isAdmin && <span className="mg-badge mg-badge-admin">Admin</span>}
+                                </li>
+                            ))}
+                        </ul>
+                        {csv.rows.length > 5 && <p className="mg-more">+{csv.rows.length - 5} more</p>}
+                        {csv.skipped > 0 && (
+                            <p className="mg-help mg-help-tight">{plural(csv.skipped, "row")} will be skipped because of missing or invalid values.</p>
+                        )}
+                        <div className="mg-form-actions">
+                            <button className="mg-btn" disabled={busy} onClick={handleUpload}>
+                                {uploading ? "Uploading..." : `Upload ${plural(csv.rows.length, "user")}`}
+                            </button>
+                        </div>
                     </div>
                 )}
+                {summary && (
+                    <p className="mg-success">
+                        <CheckCircle2 size={18} aria-hidden="true" />
+                        <span>{summary}</span>
+                    </p>
+                )}
+            </section>
+
+            <h2 className="mg-h2 mg-h2-gap" id="users-h">All users ({users.length})</h2>
+            <div className="mg-table">
+                <div className="mg-thead mg-cols-users">
+                    <span>Name and email</span><span>Batch</span><span>Role</span><span className="mg-ta-r">Actions</span>
+                </div>
+                <ul className="mg-list">
+                    {users.map(user => (
+                        <li className="mg-row mg-cols-users" key={user.id}>
+                            <div className="mg-ttl">
+                                <div className="mg-t">{user.name}</div>
+                                <div className="mg-a mg-ellip">{user.email}</div>
+                            </div>
+                            <div className="mg-umeta">
+                                <span className="mg-ubatch">Batch {user.batchId}</span>
+                                <span>
+                                    <span className={`mg-badge ${user.isAdmin ? "mg-badge-admin" : "mg-badge-user"}`}>{user.isAdmin ? "Admin" : "User"}</span>
+                                </span>
+                            </div>
+                            <div className="mg-uact">
+                                <button className="mg-btn-sm" disabled={busy} onClick={() => handleToggle(user)}>
+                                    {user.isAdmin ? "Make user" : "Make admin"}
+                                </button>
+                                <button className="mg-btn-sm mg-btn-danger" disabled={busy} aria-label={`Remove ${user.name}`} onClick={() => setConfirmUser(user)}>
+                                    Remove
+                                </button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
             </div>
-        </div>
+            {users.length === 0 && (
+                <div className="mg-empty"><p className="mg-empty-t">No users found.</p></div>
+            )}
+
+            {confirmUser && (
+                <ConfirmDialog
+                    title={`Remove ${confirmUser.name} from the library?`}
+                    description="They will be signed out and lose access to the library. This cannot be undone."
+                    confirmLabel="Remove user"
+                    onConfirm={handleRemove}
+                    onCancel={() => setConfirmUser(null)}
+                />
+            )}
+            {uploading && <LoaderOverlay title="Uploading..." message="Adding users to the library. Please keep this page open." />}
+            <Snackbar isOpen={snackbar.isOpen} message={snackbar.message} type={snackbar.type} onClose={close} />
+        </>
     );
 }

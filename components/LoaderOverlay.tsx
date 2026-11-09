@@ -1,27 +1,19 @@
 import React, { memo } from 'react';
-import "../styles/LoaderOverlay.css";
+import "../styles/Manage.css";
 
 type Props = {
     title: string;
     message: string;
 }
 
-/**
- * Enhanced loader overlay component with memoization
- * Prevents unnecessary re-renders when props haven't changed
- */
+/** Blocking loader shown while a request is in flight. */
 const LoaderOverlay = memo((props: Props) => {
     return (
-        <div className="modal active">
-            <div className="loading-overlay" id="loadingOverlay">
-                <div className="loading-content">
-                    <div className="spinner"></div>
-                    <div className="loading-title">{props.title}</div>
-                    <div className="loading-message">{props.message}</div>
-                    <div className="progress-bar">
-                        <div className="progress-fill"></div>
-                    </div>
-                </div>
+        <div className="mg-block" role="alert" aria-busy="true">
+            <div className="mg-block-card">
+                <span className="mg-spin" aria-hidden="true"></span>
+                <span className="mg-block-t">{props.title}</span>
+                <span className="mg-block-s">{props.message}</span>
             </div>
         </div>
     );
