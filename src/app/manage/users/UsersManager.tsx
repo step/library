@@ -8,31 +8,14 @@ import Snackbar from "@/components/Snackbar";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ConfirmDialog from "@/components/manage/ConfirmDialog";
 import FieldError from "@/components/manage/FieldError";
+import { parseCSV, CsvRow } from "./parseCsv";
 
-type CsvRow = { name: string; email: string; isAdmin: boolean; batchId: number };
 type Csv = { fileName: string; rows: CsvRow[]; skipped: number };
 type FormState = { name: string; email: string; batch: string; admin: boolean };
 type FormErrors = Partial<Record<"name" | "email" | "batch", string>>;
 
 const EMPTY_FORM: FormState = { name: "", email: "", batch: "", admin: false };
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-const parseCSV = (text: string): { rows: CsvRow[]; skipped: number } => {
-    const lines = text.trim().split("\n").filter(l => l.trim());
-    const rows: CsvRow[] = [];
-    let skipped = 0;
-    for (const line of lines) {
-        const parts = line.split(",").map(p => p.trim());
-        const [name, email, batchIdRaw, adminFlag] = parts;
-        const batchId = Number(batchIdRaw);
-        if (parts.length < 3 || !name || !email || !Number.isInteger(batchId)) {
-            skipped++;
-            continue;
-        }
-        rows.push({ name, email, batchId, isAdmin: adminFlag?.toLowerCase() === "true" });
-    }
-    return { rows, skipped };
-};
 
 export default function UsersManager({ initialUsers }: { initialUsers: User[] }) {
     const [users, setUsers] = useState<User[]>(initialUsers);

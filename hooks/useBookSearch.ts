@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { loadBooksAfter } from '@/app/BooksApi';
 import { Book } from '../types/Book';
 import { useDebounce } from './useDebounce';
@@ -29,14 +29,18 @@ export const useBookSearch = ({
     const [searchQuery, setSearchQuery] = useState("");
     const [loadingMore, setLoadingMore] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
-    const [searchCache, setSearchCache] = useState<Map<string, Book[]>>(new Map());
+    // Not state: it is never rendered, and changing it must not re-run the search effect.
+    const searchCache = useRef<Map<string, Book[]>>(new Map([['', initialBooks]]));
+    // Id of the newest search. Older responses that arrive late must not overwrite newer results.
+    const latestSearch = useRef(0);
     
     const debouncedSearchQuery = useDebounce(searchQuery, debounceDelay);
 
     const performSearch = useCallback(async (query: string, useCache: boolean = true) => {
-        // Check cache first
-        if (useCache && searchCache.has(query)) {
-            setBooks(searchCache.get(query) || []);
+        const searchId = ++latestSearch.current;
+
+        if (useCache && searchCache.current.has(query)) {
+            setBooks(searchCache.current.get(query) || []);
             setIsSearching(false);
             return;
         }
@@ -44,19 +48,16 @@ export const useBookSearch = ({
         setIsSearching(true);
         try {
             const { success, data } = await loadBooksAfter(query, 0, 20);
-            
-            if (success && data.length >= 0) {
-                setBooks(data);
-                // Cache the results
-                setSearchCache(prev => new Map(prev.set(query, data)));
+            if (success && Array.isArray(data)) {
+                searchCache.current.set(query, data);
+                if (searchId === latestSearch.current) setBooks(data);
             }
-        } catch (error) {
-            console.error('Search failed:', error);
-            // In case of error, keep the current books
+        } catch {
+            // Keep showing the previous results.
         } finally {
-            setIsSearching(false);
+            if (searchId === latestSearch.current) setIsSearching(false);
         }
-    }, [searchCache]);
+    }, []);
 
     const loadMore = useCallback(async (searchQuery: string, lastSeenBookId: number) => {
         if (loadingMore) return;
@@ -68,9 +69,9 @@ export const useBookSearch = ({
                 setBooks(prevBooks => [...prevBooks, ...data]);
                 
                 // Update cache for current search query
-                if (searchQuery && searchCache.has(searchQuery)) {
-                    const existing = searchCache.get(searchQuery) || [];
-                    setSearchCache(prev => new Map(prev.set(searchQuery, [...existing, ...data])));
+                if (searchQuery && searchCache.current.has(searchQuery)) {
+                    const existing = searchCache.current.get(searchQuery) || [];
+                    searchCache.current.set(searchQuery, [...existing, ...data]);
                 }
             }
         } catch (error) {
@@ -78,7 +79,7 @@ export const useBookSearch = ({
         } finally {
             setLoadingMore(false);
         }
-    }, [loadingMore, searchCache]);
+    }, [loadingMore]);
 
     // Effect for debounced search
     useEffect(() => {
