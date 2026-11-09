@@ -14,8 +14,20 @@
 }
 
 .loading-fullscreen {
-    height: 100svh;
-    width: 100svw;
+    min-height: 70vh;
+    width: 100%;
+}
+
+.loading-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .loading-message {
