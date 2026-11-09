@@ -1,4 +1,3 @@
-import { Roboto } from 'next/font/google'
 import type { Metadata } from "next";
 import "./globals.css";
 import AppShell from '../../components/AppShell';
@@ -6,12 +5,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from './lib/auth';
 import Login from '../../components/Login';
 import SessionProviderWrapper from "./SessionProviderWrapper";
+import { lexend } from './lib/fonts';
 
-
-const roboto = Roboto({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-});
 
 export const metadata: Metadata = {
   title: "Library",
@@ -31,7 +26,7 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   return (
     <html lang="en">
-      <body className={`${roboto.className}`}>
+      <body className={`${lexend.className} ${lexend.variable}`}>
         {
           !session ? <Login /> : (
             <SessionProviderWrapper>
