@@ -1,12 +1,11 @@
-import { authOptions, User } from "@/app/lib/auth";
-import { getServerSession } from "next-auth";
+import { getLoggedInUser } from "../../../../db/user";
 import { getBorrowedBooks } from "../../../../db/borrowedBooks";
 
 export async function GET() {
     const startTime = Date.now();
     console.log(`[API] GET /api/reading - Request started`);
-    const session = await getServerSession(authOptions);
-    const user = session?.user as User | undefined;
+    // The NextAuth session has no numeric id, so resolve the library user from the session email.
+    const user = await getLoggedInUser();
 
     if (!user) {
         return Response.json(

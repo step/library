@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { onboardBook } from "../../../../../db/books";
 import { invalidateBooksCache } from "../../../action";
 import { getLoggedInUser } from "../../../../../db/user";
+import { validateOnboardBody } from "./validate";
 
 const createForbiddenResponse = (message: string) => {
     return new Response(
@@ -22,10 +23,20 @@ export const POST = async (req: NextRequest) => {
             return createForbiddenResponse("Only administrators can onboard books");
         }
 
-        const data = await req.json();
-        const { title, authors, isbn10, isbn13, copies } = data;
+        let data: unknown;
+        try {
+            data = await req.json();
+        } catch {
+            return Response.json({ error: "Validation failed", message: "Request body must be valid JSON" }, { status: 400 });
+        }
 
-        await onboardBook({ title, authors, isbn10, isbn13, copies });
+        const parsed = validateOnboardBody(data);
+        if (!parsed.ok) {
+            return Response.json({ error: "Validation failed", message: parsed.message }, { status: 400 });
+        }
+        const { title } = parsed.value;
+
+        await onboardBook(parsed.value);
 
         // Invalidate cache after successful book onboarding
         await invalidateBooksCache();

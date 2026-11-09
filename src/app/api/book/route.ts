@@ -3,6 +3,8 @@ import "@/app/lib/neon-local";
 import { neon, NeonQueryFunction } from "@neondatabase/serverless";
 import { Book } from "../../../../types/Book";
 import { findBook } from "./books-archeive";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth";
 
 type SQL = NeonQueryFunction<false, false>;
 
@@ -40,6 +42,14 @@ export async function GET(request: NextRequest) {
     const startTime = Date.now();
     console.log(`[API] GET /api/book - Request started`);
     
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        return Response.json(
+            { error: 'Unauthorized - Please log in to access this resource' },
+            { status: 401 }
+        );
+    }
+
     try {
         // Use Next.js 15 searchParams API
         const searchParams = request.nextUrl.searchParams;

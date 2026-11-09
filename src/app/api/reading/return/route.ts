@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { returnBook } from "../../../../../db/borrowedBooks";
 import { getLoggedInUser } from "../../../../../db/user";
+import { invalidateBooksCache } from "../../../action";
 
 export async function POST(request: NextRequest) {
     const startTime = Date.now();
@@ -41,14 +42,16 @@ export async function POST(request: NextRequest) {
         // Attempt to return the book
         const result = await returnBook(loggedInUser.id, barcode.trim());
         
-        if (!result) {
+        if (!result.success) {
             const duration = Date.now() - startTime;
             console.log(`[API] POST /api/reading/return - Failed to return book (${duration}ms)`);
             return Response.json(
-                { error: "Return failed", message: "Failed to return book - book may not be borrowed by this user" },
+                { error: "Return failed", message: result.message },
                 { status: 400 }
             );
         }
+
+        await invalidateBooksCache();
         
         const duration = Date.now() - startTime;
         console.log(`[API] POST /api/reading/return - Success: Book returned for ${loggedInUser.name} in ${duration}ms`);

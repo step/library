@@ -31,9 +31,8 @@ export const authOptions: AuthOptions = {
             return checkUserExists(email);
         },
         async session({ session, user }) {
-            const isAdmin = await checkIsUserAdmin(user.email);
             if (user) {
-                session.user.isAdmin = isAdmin;
+                session.user.isAdmin = await checkIsUserAdmin(user.email);
             }
             return session;
         },
