@@ -102,6 +102,8 @@ const nextConfig = {
     ]
   }),
   reactStrictMode: false,
+  // Self-contained server bundle, used by the Docker image.
+  output: 'standalone',
   // Bundle optimization settings
   experimental: {
     // Optimize package imports for better tree shaking

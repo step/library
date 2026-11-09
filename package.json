@@ -12,7 +12,11 @@
     "analyze:browser": "BUNDLE_ANALYZE=browser npm run build",
     "db:generate": "node --env-file=.env node_modules/.bin/drizzle-kit generate",
     "db:migrate": "node --env-file=.env node_modules/.bin/drizzle-kit migrate",
-    "db:pull": "node --env-file=.env node_modules/.bin/drizzle-kit pull"
+    "db:pull": "node --env-file=.env node_modules/.bin/drizzle-kit pull",
+    "db:migrate:local": "node --env-file=.env.local node_modules/.bin/drizzle-kit migrate",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v"
   },
   "dependencies": {
     "@auth/neon-adapter": "^1.10.0",
@@ -39,6 +43,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
+    "pg": "^8.23.1",
     "typescript": "^5"
   }
 }

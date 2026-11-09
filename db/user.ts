@@ -1,6 +1,7 @@
 import { authOptions } from "@/app/lib/auth"
 import { getServerSession } from "next-auth"
 import { User } from "../types/User";
+import "@/app/lib/neon-local";
 import { neon } from "@neondatabase/serverless";
 
 export const getLoggedInUser = async (): Promise<User | null> => {

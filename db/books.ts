@@ -1,3 +1,4 @@
+import '@/app/lib/neon-local';
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { Book } from '../types/Book';
 import { OnboardBookReqBody } from '../types/OnboardBookReqBody';

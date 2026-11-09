@@ -1,5 +1,6 @@
 "use server";
 import { BorrowedBookWithUser } from '@/types/BorrowedBook';
+import '@/app/lib/neon-local';
 import { neon } from '@neondatabase/serverless';
 import { pool } from '../../lib/db';
 import { revalidatePath } from 'next/cache';

@@ -1,3 +1,4 @@
+import '@/app/lib/neon-local';
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { pool } from '../src/app/lib/db';
 import { BorrowedBook, ReturnedBook } from '../types/BorrowedBook';

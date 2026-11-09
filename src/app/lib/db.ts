@@ -1,3 +1,4 @@
+import './neon-local';
 import { Pool } from '@neondatabase/serverless';
 
 

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import "@/app/lib/neon-local";
 import { neon, NeonQueryFunction } from "@neondatabase/serverless";
 import { Book } from "../../../../types/Book";
 import { findBook } from "./books-archeive";

@@ -12,6 +12,43 @@ This app is built using nextjs. Follow below sets for local setup.
 - Build production app using `npm run build`
 - Run production app using `npm start`
 
+## Running with Docker
+
+The whole stack (Postgres, a Neon proxy, migrations and the app) runs in containers:
+
+```bash
+# Optional: make a Google account the first admin so sign-in works on the empty database
+export SEED_ADMIN_EMAIL=you@gmail.com SEED_ADMIN_NAME="Your Name"
+
+npm run docker:up      # build and start everything -> http://localhost:3000
+npm run docker:down    # stop (data is kept in the library_db volume)
+npm run docker:reset   # stop and delete the database volume
+```
+
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `NEXTAUTH_SECRET` are read from your shell or `.env`.
+  `DATABASE_URL` and `NEXTAUTH_URL` are always overridden by `docker-compose.yml`, so the remote database is never touched.
+- Add `http://localhost:3000/api/auth/callback/google` to the OAuth client's authorised redirect URIs.
+- Host ports: app `3000` (stop `npm run dev` first), Postgres `5433`, Neon proxy `4444`.
+- Changed code? Run `npm run docker:up` again; it rebuilds the app image.
+- A change to `POSTGRES_USER`/`POSTGRES_PASSWORD` only applies to a fresh volume, so run `npm run docker:reset` first.
+
+### Why a proxy?
+
+The app uses the Neon serverless driver, which cannot talk to plain Postgres directly (it speaks HTTP and WebSocket).
+`local-neon-http-proxy` translates for it. `src/app/lib/neon-local.ts` switches the driver over only when
+`DATABASE_URL` points at `db.localtest.me`, so deployed environments are unaffected.
+
+### `npm run dev` on your machine against the container database
+
+```bash
+docker compose up -d postgres neon-proxy
+cp .env.example .env.local     # overrides .env
+npm run db:migrate:local       # create the schema (the compose stack does this itself)
+npm run dev
+```
+
+Delete `.env.local` and restart to go back to the remote database.
+
 ## Environment Variables
 
 The following environment variables are required:
