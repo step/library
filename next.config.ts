@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- next-pwa and the bundle analyzer are CommonJS */
 const withPWA = require("next-pwa");
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',

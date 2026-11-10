@@ -6,7 +6,7 @@ interface UseVirtualScrollOptions {
 
 interface UseVirtualScrollResult {
     lastScrollPosition: number;
-    handleScroll: (event: any) => void;
+    handleScroll: (event: { target: unknown }) => void;
 }
 
 /**
@@ -17,8 +17,8 @@ export const useVirtualScroll = ({
 }: UseVirtualScrollOptions = {}): UseVirtualScrollResult => {
     const [lastScrollPosition, setLastScrollPosition] = useState(initialScrollPosition);
 
-    const handleScroll = useCallback((event: any) => {
-        setLastScrollPosition(event.target.scrollTop);
+    const handleScroll = useCallback((event: { target: unknown }) => {
+        setLastScrollPosition((event.target as HTMLElement).scrollTop);
     }, []);
 
     return {

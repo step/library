@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, lint and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm test
+
+  integration:
+    name: Integration tests (real Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: library
+          POSTGRES_PASSWORD: library
+          POSTGRES_DB: library
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U library -d library"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:integration
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    env:
+      # Placeholders only: the build must never need real credentials.
+      DATABASE_URL: postgres://library:library@localhost:5432/library
+      NEXTAUTH_SECRET: ci-build-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: ci-build-placeholder
+      GOOGLE_CLIENT_SECRET: ci-build-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build

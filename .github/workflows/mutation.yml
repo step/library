@@ -1,0 +1,58 @@
+name: Mutation tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Mutation score (unit tests, fails below 80%)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:mutation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-unit
+          path: reports/mutation
+
+  integration:
+    name: Mutation score (data layer, fails below 90%)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: library
+          POSTGRES_PASSWORD: library
+          POSTGRES_DB: library
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U library -d library"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:mutation:integration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-integration
+          path: reports/mutation
