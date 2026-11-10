@@ -75,6 +75,7 @@ export const useBookSearch = ({
                 }
             }
         } catch (error) {
+            // Stryker disable next-line all: logging only
             console.error('Load more failed:', error);
         } finally {
             setLoadingMore(false);

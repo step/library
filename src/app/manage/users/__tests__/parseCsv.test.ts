@@ -42,6 +42,9 @@ describe("parseCSV", () => {
         it("strips a UTF-8 byte order mark from the first name", () => {
             expect(parseCSV("﻿Ada,ada@x.com,1").rows[0].name).toBe("Ada");
         });
+        it("only strips a byte order mark at the very start", () => {
+            expect(parseCSV("Ada\uFEFFX,ada@x.com,1").rows[0].name).toBe("Ada\uFEFFX");
+        });
         it("keeps unicode names intact", () => {
             expect(parseCSV("Zoë Müller,zoe@x.com,3\n李雷,li@x.com,4").rows.map(r => r.name)).toEqual(["Zoë Müller", "李雷"]);
         });
@@ -56,6 +59,13 @@ describe("parseCSV", () => {
         });
         it("accepts quotes around every field", () => {
             expect(parseCSV('"A","a@x.com","1","true"').rows[0]).toEqual(row("A", "a@x.com", 1, true));
+        });
+        it("recognises an opening quote after spaces", () => {
+            expect(parseCSV(' "Smith, Jo" ,jo@x.com,5').rows[0]).toEqual(row("Smith, Jo", "jo@x.com", 5));
+        });
+        it("treats a quote in the middle of a field as an ordinary character", () => {
+            expect(parseCSV('Jo "JJ" Smith,jo@x.com,5').rows[0].name).toBe('Jo "JJ" Smith');
+            expect(parseCSV('5" nails,n@x.com,5').rows[0].name).toBe('5" nails');
         });
         it("does not hang or throw on an unterminated quote", () => {
             expect(() => parseCSV('"Jo,jo@x.com,5')).not.toThrow();

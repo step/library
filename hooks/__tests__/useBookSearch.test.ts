@@ -26,6 +26,7 @@ const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync
 const setup = () => renderHook(() => useBookSearch({ initialBooks: INITIAL }));
 
 beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     vi.useFakeTimers();
     api.loadBooksAfter.mockReset();
     api.loadBooksAfter.mockResolvedValue(ok([]));
@@ -200,6 +201,44 @@ describe("failures", () => {
         api.loadBooksAfter.mockResolvedValue(ok([book(5)]));
         await act(async () => { await result.current.performSearch("a"); });
         expect(api.loadBooksAfter).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("responses that claim success but cannot be trusted", () => {
+    it("ignores books that come with a failure flag", async () => {
+        const { result } = setup();
+        api.loadBooksAfter.mockResolvedValue({ success: false, data: [book(99, "Bogus")] });
+        await type(result, "a");
+        await wait(300);
+        expect(result.current.books).toEqual(INITIAL);
+    });
+    it("ignores a successful response whose data is not a list", async () => {
+        const { result } = setup();
+        api.loadBooksAfter.mockResolvedValue({ success: true, data: { message: "oops" } });
+        await type(result, "a");
+        await wait(300);
+        expect(result.current.books).toEqual(INITIAL);
+    });
+    it("loadMore ignores books that come with a failure flag", async () => {
+        const { result } = setup();
+        api.loadBooksAfter.mockResolvedValue({ success: false, data: [book(99, "Bogus")] });
+        await act(async () => { await result.current.loadMore("", 2); });
+        expect(result.current.books).toEqual(INITIAL);
+    });
+});
+
+describe("returning to the empty search", () => {
+    it("shows only the first page again, even after more pages were loaded before", async () => {
+        const { result } = setup();
+        api.loadBooksAfter.mockResolvedValueOnce(ok([book(3)]));
+        await act(async () => { await result.current.loadMore("", 2); });
+        expect(result.current.books.map(b => b.id)).toEqual([1, 2, 3]);
+        api.loadBooksAfter.mockResolvedValue(ok([book(8, "Dune")]));
+        await type(result, "dune");
+        await wait(300);
+        await type(result, "");
+        await wait(300);
+        expect(result.current.books.map(b => b.id)).toEqual([1, 2]);
     });
 });
 

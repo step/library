@@ -35,7 +35,10 @@ const BarcodeScanner = (props: BarcodeScannerProps) => {
             <ScannerControls onCancel={onCancel} />
             <div>
                 <Scanner
-                    onScan={(results) => onResult(results[0].rawValue)}
+                    onScan={(results) => {
+                        const value = results[0]?.rawValue;
+                        if (value) onResult(value);
+                    }}
                     onError={e => onError(e as Error)}
                     formats={['ean_13', 'qr_code']}
                 />

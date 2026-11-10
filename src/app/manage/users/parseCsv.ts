@@ -37,7 +37,8 @@ export const parseCSV = (text: string): { rows: CsvRow[]; skipped: number } => {
         const parts = splitLine(line);
         const [name, email, batchIdRaw, adminFlag] = parts;
         const batchId = Number(batchIdRaw);
-        if (parts.length < 3 || !name || !email || batchIdRaw === "" || !Number.isInteger(batchId)) {
+        // A missing batch column gives NaN, so no separate column-count check is needed.
+        if (!name || !email || batchIdRaw === "" || !Number.isInteger(batchId)) {
             skipped++;
             continue;
         }

@@ -1,6 +1,6 @@
 "use client";
 import { QrCodeIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import PrimaryButton from "./PrimaryButton";
 import LoadingSpinner from "./LoadingSpinner";
@@ -22,7 +22,27 @@ type ScannerProps = {
 
 const Scanner = ({ onScanResult, onScanError, className = "", title = "Scan", fab = false }: ScannerProps) => {
     const [showScanner, setShowScanner] = useState(false);
-    const toggleShowScanner = () => setShowScanner(!showScanner);
+    // A live camera reports the same code many times a second. Only the first result of each
+    // opening counts; later ones would otherwise borrow or return the same book repeatedly.
+    const handled = useRef(false);
+    useEffect(() => {
+        if (showScanner) handled.current = false;
+    }, [showScanner]);
+    const toggleShowScanner = () => setShowScanner(open => !open);
+    const handleResult = (scanResult: string) => {
+        if (handled.current) return;
+        handled.current = true;
+        setShowScanner(false);
+        onScanResult(scanResult);
+    };
+    const handleError = (error: unknown) => {
+        if (handled.current) return;
+        handled.current = true;
+        // Stryker disable next-line all: logging only
+        console.error("Barcode scan error:", error);
+        setShowScanner(false);
+        onScanError("Failed to scan barcode. Please try again.");
+    };
 
     return (
         <div>
@@ -39,15 +59,8 @@ const Scanner = ({ onScanResult, onScanError, className = "", title = "Scan", fa
                 </div>
             )}
             <BarcodeScanner
-                onResult={(scanResult) => {
-                    toggleShowScanner();
-                    onScanResult(scanResult);
-                }}
-                onError={(error) => {
-                    console.error("Barcode scan error:", error);
-                    toggleShowScanner();
-                    onScanError("Failed to scan barcode. Please try again.");
-                }}
+                onResult={handleResult}
+                onError={handleError}
                 opened={showScanner}
                 onCancel={() => setShowScanner(false)}
             />

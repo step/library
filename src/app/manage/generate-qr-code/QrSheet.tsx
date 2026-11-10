@@ -30,7 +30,8 @@ const QrSheet = () => {
 
     const generate = (e: React.FormEvent) => {
         e.preventDefault();
-        const count = Number(input.trim());
+        const text = input.trim();
+        const count = /^\d+$/.test(text) ? Number(text) : NaN;
         if (!Number.isInteger(count) || count <= 0) {
             setError("Please enter a valid number of QR codes.");
             return;

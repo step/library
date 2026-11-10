@@ -1,5 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { formatShortDate, formatTimeSince, formatDuration } from "../dateUtils";
 
 const NOW = new Date("2026-11-09T12:00:00.000Z");
@@ -112,24 +115,33 @@ describe("formatDuration", () => {
 });
 
 describe("time zones", () => {
-    const original = process.env.TZ;
-    afterEach(() => {
-        if (original === undefined) delete process.env.TZ; else process.env.TZ = original;
-    });
+    // Changing process.env.TZ inside a test worker is unreliable (it depends on the worker type),
+    // so each zone runs in its own Node process with the clock pinned to NOW.
+    const run = (tz: string, body: string): unknown => {
+        const file = pathToFileURL(path.resolve(__dirname, "../dateUtils.ts")).href;
+        const script = `
+            const Real = Date, fixed = ${NOW.getTime()};
+            globalThis.Date = class extends Real { constructor(...a) { a.length ? super(...a) : super(fixed); } static now() { return fixed; } };
+            const { formatShortDate, formatTimeSince, formatDuration } = await import(${JSON.stringify(file)});
+            console.log(JSON.stringify(${body}));`;
+        const out = execFileSync(process.execPath, ["--input-type=module", "-e", script], { env: { ...process.env, TZ: tz }, encoding: "utf8" });
+        return JSON.parse(out.trim().split("\n").pop()!);
+    };
 
     it.each(["UTC", "Asia/Kolkata", "America/Los_Angeles", "Pacific/Auckland"])(
         "formatTimeSince and formatDuration give the same result in %s",
         (tz) => {
-            process.env.TZ = tz;
-            expect(formatTimeSince(daysAgo(45))).toBe("1 month ago");
-            expect(formatDuration("2026-01-01T00:00:00Z", "2026-01-15T00:00:00Z")).toBe("14 days");
+            expect(run(tz, `[formatTimeSince(${JSON.stringify(daysAgo(45))}), formatDuration("2026-01-01T00:00:00Z", "2026-01-15T00:00:00Z")]`))
+                .toEqual(["1 month ago", "14 days"]);
         },
     );
 
-    it("formatShortDate shows the viewer's local day", () => {
-        process.env.TZ = "Pacific/Auckland"; // UTC+13 in November
-        expect(formatShortDate("2026-10-12T23:00:00Z")).toBe("13 Oct 2026");
-        process.env.TZ = "America/Los_Angeles";
-        expect(formatShortDate("2026-10-12T03:00:00Z")).toBe("11 Oct 2026");
+    it.each([
+        ["Pacific/Auckland", "2026-10-12T23:00:00Z", "13 Oct 2026"],   // UTC+13 in October
+        ["America/Los_Angeles", "2026-10-12T03:00:00Z", "11 Oct 2026"], // UTC-7
+        ["Asia/Kolkata", "2026-10-12T20:00:00Z", "13 Oct 2026"],        // UTC+5:30
+        ["UTC", "2026-10-12T23:59:59Z", "12 Oct 2026"],
+    ])("formatShortDate in %s shows the viewer's local day for %s", (tz, iso, expected) => {
+        expect(run(tz, `formatShortDate(${JSON.stringify(iso)})`)).toBe(expected);
     });
 });
