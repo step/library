@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.mts",
+    "test:mutation": "stryker run",
+    "test:mutation:integration": "stryker run stryker.integration.config.json",
     "analyze": "ANALYZE=true npm run build",
     "analyze:server": "BUNDLE_ANALYZE=server npm run build",
     "analyze:browser": "BUNDLE_ANALYZE=browser npm run build",
@@ -39,6 +41,9 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@next/bundle-analyzer": "^15.4.6",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/typescript-checker": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

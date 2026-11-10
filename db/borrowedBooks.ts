@@ -1,10 +1,7 @@
 import '@/app/lib/neon-local';
-import { neon, NeonQueryFunction } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 import { pool } from '../src/app/lib/db';
 import { BorrowedBook, ReturnedBook } from '../types/BorrowedBook';
-import { BookCopy } from '../types/Book';
-
-type SQL = NeonQueryFunction<false, false>;
 
 export const getBorrowedBooks = async (userId: number): Promise<BorrowedBook[]> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
@@ -56,13 +53,11 @@ export const checkBookCopyAvailability = async (qrCode: string): Promise<{ avail
             LIMIT 1
         `;
 
-        if (result.length === 0) {
-            return { available: false };
-        }
-
-        const bookCopy = result[0];
-        return { available: !bookCopy.borrowed };
+        // No row means an unknown code, which is never available.
+        const copy = result[0];
+        return { available: !!copy && !copy.borrowed };
     } catch (error) {
+        // Stryker disable next-line all: logging only
         console.error('Error checking book copy availability:', error);
         return { available: false };
     }
@@ -125,6 +120,7 @@ export const borrowBook = async (userId: number, qrCode: string): Promise<Borrow
     } catch (error) {
         // Rollback transaction on error
         await client.query('ROLLBACK');
+        // Stryker disable next-line all: logging only
         console.error('Error borrowing book:', error);
         return {
             success: false,
@@ -135,22 +131,6 @@ export const borrowBook = async (userId: number, qrCode: string): Promise<Borrow
         client.release();
     }
 };
-
-const getBookCopyByQRCode = async (sql: SQL, qrCode: string): Promise<BookCopy | null> => {
-    const result = await sql`
-        SELECT id, book_id, borrowed FROM book_copies WHERE qr_code = ${qrCode} LIMIT 1;
-    `;
-    if (result.length === 0) {
-        return null;
-    }
-    const row = result[0];
-    return {
-        id: row.id,
-        bookId: row.book_id,
-        qrCode: qrCode,
-        borrowed: row.borrowed
-    }
-}
 
 export const returnBook = async (userId: number, barcode: string): Promise<{ success: boolean; message: string }> => {
     const client = await pool.connect();
@@ -201,6 +181,7 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
 
     } catch (error) {
         await client.query('ROLLBACK');
+        // Stryker disable next-line all: logging only
         console.error('Error returning book:', error);
         return { success: false, message: 'Failed to return book. Please try again.' };
     } finally {

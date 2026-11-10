@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.config.mts"
+  },
+  "checkers": [
+    "typescript"
+  ],
+  "tsconfigFile": "tsconfig.json",
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
+  "incremental": true,
+  "incrementalFile": ".stryker-tmp/incremental.json",
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "mutate": [
+    "utils/**/*.ts",
+    "hooks/**/*.ts",
+    "src/app/lib/**/*.ts",
+    "src/app/action.ts",
+    "src/app/BooksApi.ts",
+    "src/app/api/**/*.ts",
+    "src/app/manage/**/*.ts",
+    "components/**/*.tsx",
+    "src/app/**/*.tsx",
+    "!**/__tests__/**",
+    "!**/*.test.*",
+    "!**/*.d.ts",
+    "!components/icons/**",
+    "!db/schema.ts",
+    "!src/app/lib/fonts.ts",
+    "!src/app/action.ts",
+    "!src/app/manage/borrowed-books/action.ts",
+    "!src/app/lib/db.ts"
+  ],
+  "thresholds": {
+    "high": 90,
+    "low": 80,
+    "break": 80
+  },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": "always",
+  "timeoutMS": 10000
+}

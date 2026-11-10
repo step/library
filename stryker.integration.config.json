@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.integration.config.mts"
+  },
+  "checkers": [
+    "typescript"
+  ],
+  "tsconfigFile": "tsconfig.json",
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
+  "incremental": true,
+  "incrementalFile": ".stryker-tmp/incremental-integration.json",
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/integration.html"
+  },
+  "mutate": [
+    "db/books.ts",
+    "db/borrowedBooks.ts",
+    "db/user.ts",
+    "src/app/action.ts",
+    "src/app/lib/like.ts",
+    "src/app/manage/borrowed-books/action.ts"
+  ],
+  "concurrency": 1,
+  "thresholds": {
+    "high": 95,
+    "low": 90,
+    "break": 90
+  },
+  "tempDirName": ".stryker-tmp-integration",
+  "cleanTempDir": "always",
+  "timeoutMS": 30000
+}

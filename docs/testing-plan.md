@@ -24,7 +24,7 @@ These look like real defects. Write a failing test that pins the intended behavi
 | F11 | `api/users/route.ts` POST | Duplicate detection matches the error text `'unique'`. Postgres code is `23505`. Also email is not validated. | Duplicate email -> 409 using a real PG error object. |
 | F12 | `api/users/bulk/route.ts` | Check `!u.name` passes numbers, then `.trim()` throws on non-strings (500). Duplicates inside the same upload are inserted once, then skipped, but reported differently. Insert loop is not transactional. | Body `[{name:1,email:2,batchId:1}]` -> expect 400. |
 | F13 | `db/user.ts` `deleteLibraryUser` | Deletes the NextAuth `users` row by email even though the library user delete may be rejected (FK). It is one statement so atomic, but a deleted admin can still hold a live session cookie until the cascade runs. | DB test with and without borrow history. |
-| F14 | `components/Scanner.tsx` | `onError` and `onResult` both call `toggleShowScanner()`. If the scanner is already closed this reopens it. | Fire `onResult` twice quickly -> scanner must end closed. |
+| F14 ✅ fixed | `components/Scanner.tsx` | `onError` and `onResult` both call `toggleShowScanner()`. If the scanner is already closed this reopens it. | Fire `onResult` twice quickly -> scanner must end closed. |
 | F15 | `UsersManager.parseCSV` | Splits on `,` so quoted names (`"Smith, Jo"`), `\r\n` line endings leave a trailing `\r` on the last column, header row is silently skipped as invalid, and BOM is kept in the first name. | CSV tests in section 4. |
 | F16 | `utils/dateUtils.formatBorrowDate` | Dead code: nothing imports it (checked with grep). It duplicates `formatTimeSince` with different rounding. Delete it rather than test it. | Delete the function; mutation score then ignores it. |
 | F17 | `src/app/api/book/books-archeive.ts` | `findBook` runs Google and Open Library in parallel, but if either `fetch` rejects or returns non-JSON the whole lookup throws and the working one is discarded. `data.items[0]` is read when `totalItems` is missing. | One API fails, other succeeds -> expect book returned. |
@@ -36,7 +36,14 @@ These look like real defects. Write a failing test that pins the intended behavi
 | F13 ✅ fixed | `api/users/[id]/route.ts` | `ON DELETE RESTRICT` raises **23001**, the route only handled 23503, so deleting a user with history gave 500 instead of 409. | Integration + route test. |
 | F20 ✅ fixed | trigger `sync_book_counts` | Lost update: parallel borrows of different copies of one book left `borrowed_count` too low (6 parallel borrows -> 1). Migration `0009` locks the book row (`FOR NO KEY UPDATE`; plain `FOR UPDATE` deadlocked with FK locks). | Integration concurrency test. |
 | F21 ✅ fixed | `db/books.ts` `onboardBook` | A request with a new ISBN 10 but an existing ISBN 13 crashed (unique violation); two admins adding the same new book at once made one fail. | Integration. |
-| F22 open | `api/users/[id]` PATCH | A body without `isAdmin` demotes the user (`!!undefined`). Needs validation. | Route test pins it today. |
+| F10 ✅ fixed | `api/books/route.ts` | `search` was URL-decoded twice, so `100%` gave 500. `size=10abc` was accepted as 10, and a non-numeric `lastSeenId` reached the database as NaN. | Route tests. |
+| F12 ✅ fixed | `api/users/bulk` | Non-string name/email crashed with 500; empty-string batch became 0; partial imports. Now every row is validated first (`api/users/validate.ts`), capped at 1000 rows. `POST /api/users` uses the same rules (`isAdmin` must be a boolean, so the string "false" no longer makes an admin). | Route + validator tests. |
+| F17 ✅ fixed | `book/books-archeive.ts` | One failing service discarded the other's good answer; missing `items` threw. | Stubbed-fetch tests. |
+| F23 ✅ fixed | `components/Searchbar.tsx` | The box is disabled while a search runs (as in the design), which drops focus, so someone pausing mid-word was kicked out. Focus is now restored. | Component test (simulates the browser blur). |
+| F24 ✅ fixed | `components/BarcodeScanner.tsx` | `results[0].rawValue` threw on an empty detection. | Component test. |
+| F25 ✅ fixed | `QrSheet.tsx` | `1e1` was accepted as 10 codes. Digits only now. | Component test. |
+| F18 ✅ fixed | `manage/users/page.tsx` | Loaded all users with no admin check of its own. New `requireAdminPage()`. | Page test. |
+| F22 ✅ fixed | `api/users/[id]` PATCH | Missing `isAdmin` demoted the user; id parsed with `parseInt` (`12abc`). Now boolean required and ids digits-only. | Route tests. |
 | F18 | `manage/layout.tsx` | Redirects, but the nested pages (`users/page.tsx` and others) fetch before the layout runs in some cases (layouts and pages render in parallel). The data functions must enforce admin themselves. `getAllLibraryUsers` and `getAllBorrowedBooks` partly do. | Page-level test as non-admin: no data fetched. |
 
 ## 1. Test infrastructure (do first)
@@ -198,6 +205,8 @@ Done: `signIn` and `session` callbacks and config (`src/app/lib/__tests__/auth.t
 
 ## 6. Components (React Testing Library) - P1
 
+**Status: done for every component** (373 tests across 12 files). Helpers: `test/helpers/fakes.tsx` (fake scanner). Note `vitest.setup.ts` shims `globalThis.jest` so Testing Library can advance fake timers. Not yet done: `vitest-axe` accessibility sweep, visual regression (see section 8).
+
 Mock `fetch` / server actions; use `userEvent`; assert on roles and text, not class names.
 
 - `AppShell`: nav items for user vs admin (Manage hidden for non-admin); active item and `aria-current` for `/`, `/reading`, `/reading/x`, `/history`, `/manage/users`; `/` must not match `/reading`; scanner selection (`ReturnBook` on `/reading`, `BorrowBook` elsewhere, none on `/manage`); `initials()` for `"Ada Lovelace"`, single name, empty name falling back to email, `a.b@x.com`, `"?"`; both sign-out buttons call `signOut`.
@@ -245,6 +254,8 @@ Run against `docker compose up` (Postgres 18 + proxy + app on :3000) with a seed
 
 ## 10. Mutation testing
 
+**Status: set up and baselined.** `npm run test:mutation` (unit tests, 87.6%, fails below 80) and `npm run test:mutation:integration` (data layer through the real-Postgres tests, 97.3%, fails below 90; one worker because the tests share a database). HTML reports go to `reports/mutation/`. Log lines and `duration` arithmetic are excluded with `// Stryker disable next-line all: logging only`. Known remaining survivors: mostly CSS class and style strings in presentational components (`StepIcon`, skeletons), hook dependency arrays, and equivalent mutants hidden by the retry/`catch` logic. Weakest unit files: `QrSheet` (74%), `UsersManager` (80%), `VirtualizedBookList`/`AsyncSearchResults` (wrappers around the mocked list). Not done: CI nightly job, property-based tests (`fast-check`), per-PR incremental runs.
+
 Tool: **StrykerJS** with `@stryker-mutator/vitest-runner` and the TypeScript checker.
 
 - [ ] Install, add `stryker.config.json`:
@@ -281,7 +292,7 @@ Tool: **StrykerJS** with `@stryker-mutator/vitest-runner` and the TypeScript che
 
 ## 12. Suggested order of work
 
-Progress: steps 1 to 3 done (337 unit + 131 integration tests). Step 1 done (171 tests passing: login 10, authorisation matrix 53, return/borrow/on-board routes, on-board validator, auth callbacks).
+Progress: steps 1 to 6 done (947 unit + 149 integration tests; mutation score 87.6% unit, 97.3% data layer). Step 1 done (171 tests passing: login 10, authorisation matrix 53, return/borrow/on-board routes, on-board validator, auth callbacks).
 
 1. Infrastructure (section 1) and the authorisation matrix test (section 4). Fix F1, F2, F3, F8.
 2. `dateUtils`, hooks, `parseCSV`, QR (section 2). Fast, high value, easy mutation wins.

@@ -42,3 +42,8 @@ yarn-error.log*
 next-env.d.ts
 .screenshots
 scripts/dumps/
+
+# mutation testing
+.stryker-tmp/
+reports/
+.stryker-tmp-integration/

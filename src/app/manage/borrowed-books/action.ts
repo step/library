@@ -87,6 +87,7 @@ export const forceReturnBook = async (
         return { success: true, message: 'Book marked as returned successfully' };
     } catch (error) {
         await client.query('ROLLBACK');
+        // Stryker disable next-line all: logging only
         console.error('Error force returning book:', error);
         return { success: false, message: 'Failed to mark book as returned' };
     } finally {

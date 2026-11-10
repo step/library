@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { q, insertBook, insertUser, openLoan, bookCounts, copyBorrowed } from "../../../../../test/integration/fixtures";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { q, insertBook, insertUser, openLoan, bookCounts, copyBorrowed, recordTransactions, openTransactions, HUGE_ID } from "../../../../../test/integration/fixtures";
+import { pool } from "../../../lib/db";
 
 const session = vi.hoisted(() => ({ current: null as unknown }));
 const cache = vi.hoisted(() => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
@@ -17,6 +18,7 @@ const signedInAs = (email: string | null) => {
     session.current = email ? { user: { email, name: "x" } } : null;
 };
 
+afterEach(() => vi.restoreAllMocks());
 beforeEach(() => {
     cache.revalidatePath.mockClear();
     cache.revalidateTag.mockClear();
@@ -121,5 +123,34 @@ describe("forceReturnBook", () => {
         signedInAs("boss@x.com");
         await forceReturnBook(loan);
         expect(await copyBorrowed(other.qrs[0])).toBe(true);
+    });
+});
+
+
+describe("forceReturnBook: transactions", () => {
+    const record = () => recordTransactions(pool, vi.spyOn as never);
+    beforeEach(() => signedInAs("boss@x.com"));
+
+    it("runs as one transaction: BEGIN, update, COMMIT", async () => {
+        const { loan } = await setup();
+        const log = record();
+        await forceReturnBook(loan);
+        expect(log).toEqual(["BEGIN", "UPDATE", "COMMIT"]);
+        expect(await openTransactions()).toBe(0);
+    });
+    it("rolls back for an unknown loan and leaves no transaction open", async () => {
+        await setup();
+        const log = record();
+        expect(await forceReturnBook(999999)).toEqual({ success: false, message: "Borrow record not found" });
+        expect(log).toEqual(["BEGIN", "UPDATE", "ROLLBACK"]);
+        expect(await openTransactions()).toBe(0);
+    });
+    it("rolls back and reports failure when the update itself fails", async () => {
+        const { book } = await setup();
+        const log = record();
+        expect(await forceReturnBook(HUGE_ID)).toEqual({ success: false, message: "Failed to mark book as returned" });
+        expect(log).toEqual(["BEGIN", "UPDATE", "ROLLBACK"]);
+        expect(await openTransactions()).toBe(0);
+        expect(await copyBorrowed(book.qrs[0])).toBe(true);
     });
 });

@@ -72,3 +72,29 @@ export const insertNextAuthUser = async (email: string) => {
     await q(`INSERT INTO sessions ("userId", expires, "sessionToken") VALUES ($1, now() + interval '1 day', $2)`, [u.id, `tok-${email}`]);
     return u.id;
 };
+
+/**
+ * Records the first word of every SQL statement a pool client runs (BEGIN, SELECT, COMMIT...).
+ * Call before the code under test; the returned array fills as it runs.
+ */
+export const recordTransactions = (pool: { connect: (...a: never[]) => Promise<unknown> }, spy: (obj: never, method: never) => { mockImplementation: (f: () => Promise<unknown>) => void }) => {
+    const log: string[] = [];
+    const real = pool.connect.bind(pool);
+    spy(pool as never, "connect" as never).mockImplementation(async () => {
+        const client = (await real()) as { query: (...a: unknown[]) => unknown };
+        const original = Object.getPrototypeOf(client).query.bind(client);
+        client.query = (text: unknown, ...rest: unknown[]) => {
+            log.push(String(typeof text === "string" ? text : (text as { text: string }).text).trim().split(/\s+/)[0].toUpperCase());
+            return original(text, ...rest);
+        };
+        return client;
+    });
+    return log;
+};
+
+/** Connections of the test database that are sitting inside an unfinished transaction. */
+export const openTransactions = async () =>
+    Number((await q<{ n: string }>(`SELECT count(*) AS n FROM pg_stat_activity WHERE datname = current_database() AND state LIKE 'idle in transaction%'`))[0].n);
+
+/** A number too big for a Postgres integer: makes any query that uses it fail. */
+export const HUGE_ID = 2 ** 40;

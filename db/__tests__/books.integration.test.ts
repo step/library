@@ -37,6 +37,13 @@ describe("getBooks: browsing", () => {
         }]);
     });
 
+    it("treats a whitespace-only search as no search after the first page too (cursor)", async () => {
+        await seed(["A", "B", "C"]);
+        const first = await getBooks("", 1);
+        expect(titles(await getBooks("   ", 20, String(first[0].id)))).toEqual(["B", "C"]);
+        expect(titles(await loadBooksWithSearch("   ", String(first[0].id), 20))).toEqual(["B", "C"]);
+    });
+
     it("treats a blank or whitespace-only search as no search", async () => {
         await seed(["A", "B"]);
         expect(await getBooks("   ", 20)).toHaveLength(2);
@@ -200,6 +207,18 @@ describe("onboardBook", () => {
         await onboardBook({ title: "Dune", authors: "FH", isbn13: base.isbn13, copies: ["c2"] });
         expect(await q(`SELECT 1 FROM books`)).toHaveLength(1);
         expect((await q(`SELECT count FROM books`))[0].count).toBe(2);
+    });
+
+    it("recognises a book when only the ISBN 10 matches and the request carries a different ISBN 13", async () => {
+        await onboardBook({ ...base, copies: ["c1"] });
+        await onboardBook({ ...base, isbn13: "9780000000002", copies: ["c2"] });
+        expect(await q(`SELECT 1 FROM books`)).toHaveLength(1);
+        expect((await q(`SELECT count, isbn13 FROM books`))[0]).toEqual({ count: 2, isbn13: "9780441172719" });
+    });
+
+    it("does not hide a real failure behind the duplicate-book retry", async () => {
+        await expect(onboardBook({ ...base, title: null as unknown as string, copies: [] })).rejects.toMatchObject({ code: "23502" });
+        expect(await q(`SELECT 1 FROM books`)).toHaveLength(0);
     });
 
     it("recognises a book when the new request has a different ISBN 10 but the same ISBN 13", async () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { q, insertBook, insertUser, bookCounts, copyBorrowed, openLoan, loansFor } from "../../test/integration/fixtures";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { q, insertBook, insertUser, bookCounts, copyBorrowed, openLoan, loansFor, recordTransactions, openTransactions, HUGE_ID } from "../../test/integration/fixtures";
 
 vi.mock("@/app/lib/auth", () => ({ authOptions: {} }));
 
@@ -11,6 +11,8 @@ import { pool } from "../../src/app/lib/db";
 beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 });
+afterEach(() => vi.restoreAllMocks());
+const record = () => recordTransactions(pool, vi.spyOn as never);
 
 describe("borrowBook", () => {
     it("borrows a free copy", async () => {
@@ -286,5 +288,94 @@ describe("checkBookCopyAvailability", () => {
         const b = await insertBook();
         expect(await checkBookCopyAvailability("x' OR '1'='1")).toEqual({ available: false });
         expect(await q(`SELECT 1 FROM book_copies`)).toHaveLength(b.qrs.length);
+    });
+});
+
+
+describe("transactions", () => {
+    describe("borrowBook", () => {
+        it("runs as one transaction: BEGIN, lock the copy, insert, COMMIT", async () => {
+            const b = await insertBook(); const u = await insertUser();
+            const log = record();
+            await borrowBook(u.id, b.qrs[0]);
+            expect(log).toEqual(["BEGIN", "SELECT", "INSERT", "COMMIT"]);
+            expect(await openTransactions()).toBe(0);
+        });
+        it("locks the copy row while checking it (FOR UPDATE)", async () => {
+            const b = await insertBook(); const u = await insertUser();
+            const seen: string[] = [];
+            const real = pool.connect.bind(pool);
+            vi.spyOn(pool, "connect").mockImplementation(async () => {
+                const c = await real(); const orig = Object.getPrototypeOf(c).query.bind(c);
+                c.query = (t: unknown, ...r: unknown[]) => { seen.push(String(t)); return orig(t, ...r); };
+                return c;
+            });
+            await borrowBook(u.id, b.qrs[0]);
+            expect(seen.find(t => /SELECT/i.test(t))).toMatch(/FOR UPDATE/);
+        });
+        it.each([["an unknown code", "nope"], ["a borrowed copy", "BORROWED"]])("rolls back for %s and leaves no transaction open", async (_n, code) => {
+            const b = await insertBook(); const u = await insertUser();
+            await borrowBook(u.id, b.qrs[0]);
+            const log = record();
+            await borrowBook(u.id, code === "BORROWED" ? b.qrs[0] : code);
+            expect(log).toEqual(["BEGIN", "SELECT", "ROLLBACK"]);
+            expect(await openTransactions()).toBe(0);
+        });
+        it("rolls back when the insert fails, and says so", async () => {
+            const b = await insertBook();
+            const log = record();
+            expect(await borrowBook(HUGE_ID, b.qrs[0])).toEqual({ success: false, message: "Failed to borrow book. Please try again." });
+            expect(log).toEqual(["BEGIN", "SELECT", "INSERT", "ROLLBACK"]);
+            expect(await openTransactions()).toBe(0);
+        });
+    });
+
+    describe("returnBook", () => {
+        const borrowed = async () => { const b = await insertBook(); const u = await insertUser(); await borrowBook(u.id, b.qrs[0]); return { b, u }; };
+
+        it("runs as one transaction: BEGIN, lock the copy, update, COMMIT", async () => {
+            const { b, u } = await borrowed();
+            const log = record();
+            await returnBook(u.id, b.qrs[0]);
+            expect(log).toEqual(["BEGIN", "SELECT", "UPDATE", "COMMIT"]);
+            expect(await openTransactions()).toBe(0);
+        });
+        it("rolls back for an unknown code and for a copy on the shelf", async () => {
+            const { b, u } = await borrowed();
+            await returnBook(u.id, b.qrs[0]);
+            for (const code of ["nope", b.qrs[0]]) {
+                const log = record();
+                await returnBook(u.id, code);
+                expect(log).toEqual(["BEGIN", "SELECT", "ROLLBACK"]);
+                vi.restoreAllMocks();
+            }
+            expect(await openTransactions()).toBe(0);
+        });
+        it("rolls back when the user does not hold the copy", async () => {
+            const { b } = await borrowed();
+            const other = await insertUser();
+            const log = record();
+            await returnBook(other.id, b.qrs[0]);
+            expect(log).toEqual(["BEGIN", "SELECT", "UPDATE", "ROLLBACK"]);
+            expect(await openTransactions()).toBe(0);
+        });
+        it("rolls back and reports failure when the update itself fails", async () => {
+            const { b } = await borrowed();
+            const log = record();
+            expect(await returnBook(HUGE_ID, b.qrs[0])).toEqual({ success: false, message: "Failed to return book. Please try again." });
+            expect(log).toEqual(["BEGIN", "SELECT", "UPDATE", "ROLLBACK"]);
+            expect(await openTransactions()).toBe(0);
+            expect(await copyBorrowed(b.qrs[0])).toBe(true);
+        });
+    });
+
+    it("checkBookCopyAvailability answers 'not available' instead of throwing when the database is unreachable", async () => {
+        const original = process.env.DATABASE_URL;
+        process.env.DATABASE_URL = "postgres://nobody:none@127.0.0.1:1/none";
+        try {
+            expect(await checkBookCopyAvailability("qr-1")).toEqual({ available: false });
+        } finally {
+            process.env.DATABASE_URL = original;
+        }
     });
 });
