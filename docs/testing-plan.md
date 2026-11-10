@@ -62,7 +62,7 @@ These look like real defects. Write a failing test that pins the intended behavi
 - [ ] Integration DB: use the compose Postgres (`postgres:18`) on a separate database `library_test`, created and migrated in a `globalSetup` (`drizzle-kit migrate`, then truncate between tests inside a transaction or with `TRUNCATE ... RESTART IDENTITY CASCADE`). Never read `.env`. Guard: abort if `DATABASE_URL` host is not `localhost` / `db.localtest.me`.
 - [ ] Scripts: `test`, `test:watch`, `test:coverage`, `test:integration`, `test:mutation`, `test:e2e`.
 - [ ] Coverage via `@vitest/coverage-v8`. Thresholds (fail CI below): lines 90, branches 85 for `db/`, `src/app/api/`, `hooks/`, `utils/`. 80 for `components/`.
-- [ ] CI workflow (GitHub Actions): typecheck, lint, unit, integration (services: postgres:18), build, then e2e on main only. Mutation job nightly.
+- [x] CI workflow (GitHub Actions, `.github/workflows/ci.yml`): typecheck, lint, unit, integration (services: postgres:18), build. E2E on main still to add. Mutation tests are deliberately not run in CI; run them locally.
 
 ## 2. Pure logic (unit, no mocks) - P1
 
@@ -254,7 +254,7 @@ Run against `docker compose up` (Postgres 18 + proxy + app on :3000) with a seed
 
 ## 10. Mutation testing
 
-**Status: set up and baselined.** `npm run test:mutation` (unit tests, 87.6%, fails below 80) and `npm run test:mutation:integration` (data layer through the real-Postgres tests, 97.3%, fails below 90; one worker because the tests share a database). HTML reports go to `reports/mutation/`. Log lines and `duration` arithmetic are excluded with `// Stryker disable next-line all: logging only`. Known remaining survivors: mostly CSS class and style strings in presentational components (`StepIcon`, skeletons), hook dependency arrays, and equivalent mutants hidden by the retry/`catch` logic. Weakest unit files: `QrSheet` (74%), `UsersManager` (80%), `VirtualizedBookList`/`AsyncSearchResults` (wrappers around the mocked list). Not done: CI nightly job, property-based tests (`fast-check`), per-PR incremental runs.
+**Status: set up and baselined.** `npm run test:mutation` (unit tests, 87.6%, fails below 80) and `npm run test:mutation:integration` (data layer through the real-Postgres tests, 97.3%, fails below 90; one worker because the tests share a database). HTML reports go to `reports/mutation/`. Log lines and `duration` arithmetic are excluded with `// Stryker disable next-line all: logging only`. Known remaining survivors: mostly CSS class and style strings in presentational components (`StepIcon`, skeletons), hook dependency arrays, and equivalent mutants hidden by the retry/`catch` logic. Weakest unit files: `QrSheet` (74%), `UsersManager` (80%), `VirtualizedBookList`/`AsyncSearchResults` (wrappers around the mocked list). Not done: property-based tests (`fast-check`), per-PR incremental runs.
 
 Tool: **StrykerJS** with `@stryker-mutator/vitest-runner` and the TypeScript checker.
 
@@ -276,7 +276,7 @@ Tool: **StrykerJS** with `@stryker-mutator/vitest-runner` and the TypeScript che
   - `Math.min(MAX_CODES, ...)` / `Math.max(1, ...)` in `QrSheet`: stepper bounds both ends.
   - Array/spread mutations in `useBookSearch` (`[...prev, ...data]` -> `data`): assert earlier books stay after `loadMore`.
   - Conditional `isAdmin` nav item: assert Manage absent for non-admin.
-- [ ] Add `npm run test:mutation` and a nightly CI job that uploads the HTML report and fails under `break`. On PRs, run `--incremental` only on changed files.
+- [x] `npm run test:mutation` and `npm run test:mutation:integration` exist. Decision: not run in CI, only locally.
 - [ ] Complement with **property-based tests** (`fast-check`) for: date formatters (monotonic with elapsed time), `parseCSV` (never throws, `rows.length + skipped = nonblank lines`), ISBN validation, cursor pagination (concatenated pages equal the full list), and `initials` (always 1-2 uppercase characters).
 - [ ] Database-level mutation check, manually or scripted: temporarily drop each trigger / constraint / unique index and confirm at least one integration test fails.
 
@@ -301,6 +301,6 @@ Progress: steps 1 to 6 done (947 unit + 149 integration tests; mutation score 87
 5. Components (section 6), most-used first: `AppShell`, `Books`, scanner flows, `NewBookForm`, `UsersManager`.
 6. Mutation baseline (section 10) and iterate on survivors.
 7. Playwright E2E (section 8) and security checks (section 11).
-8. CI, thresholds and nightly mutation job.
+8. CI and thresholds (mutation stays local).
 
 Rough size: about 450 unit/component tests, 60 integration tests, 25 E2E scenarios.
