@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
         return Response.json(books, {
             headers: {
-                "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600", // Cache for 5 minutes
+                "Cache-Control": "private, max-age=300, stale-while-revalidate=600", // Cache for 5 minutes
             },
         });
     } catch (error) {

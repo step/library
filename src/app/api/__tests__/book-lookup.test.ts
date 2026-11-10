@@ -62,7 +62,7 @@ describe("GET /api/book", () => {
         expect(res.status).toBe(200);
         expect(await res.json()).toEqual({ id: 9, title: "Dune", authors: "FH", isbn10: "0441172717", isbn13: "9780441172719", borrowedCount: 0, count: 0 });
         expect(calls).toEqual([]);
-        expect(res.headers.get("Cache-Control")).toMatch(/s-maxage=3600/);
+        expect(res.headers.get("Cache-Control")).toMatch(/private, max-age=3600/);
     });
 
     it("trims the barcode and passes it to SQL as a parameter", async () => {

@@ -114,7 +114,7 @@ describe("GET /api/books", () => {
     it("200 with the list and a five minute shared cache", async () => {
         m.loadBooksWithSearch.mockResolvedValue([{ id: 1 }]);
         const res = await get();
-        expect(res.headers.get("Cache-Control")).toBe("public, s-maxage=300, stale-while-revalidate=600");
+        expect(res.headers.get("Cache-Control")).toBe("private, max-age=300, stale-while-revalidate=600");
         await expectJson(res, 200, [{ id: 1 }]);
     });
     it.each(["0", "abc", "-1"])("400 for size=%s", async (size) => {
@@ -147,7 +147,7 @@ describe("GET /api/book", () => {
     it("200 from the local catalogue with a one hour shared cache", async () => {
         m.rows = [{ id: 3, title: "T", authors: "A", isbn10: "x", isbn13: "y" }];
         const res = await get("123");
-        expect(res.headers.get("Cache-Control")).toBe("public, s-maxage=3600, stale-while-revalidate=1800");
+        expect(res.headers.get("Cache-Control")).toBe("private, max-age=3600, stale-while-revalidate=1800");
         await expectJson(res, 200, { id: 3, title: "T", authors: "A", isbn10: "x", isbn13: "y", borrowedCount: 0, count: 0 });
     });
     it("200 from the outside services, marked as not yet in the library (id -1)", async () => {

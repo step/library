@@ -87,7 +87,7 @@ describe("GET /api/books", () => {
     });
 
     it("sets a cache header on success", async () => {
-        expect((await get()).headers.get("Cache-Control")).toMatch(/s-maxage=300/);
+        expect((await get()).headers.get("Cache-Control")).toMatch(/private, max-age=300/);
     });
 
     it("answers 500 without details when loading fails", async () => {
