@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Library</title>
+  <rect width="64" height="64" rx="14" fill="#22567C"/>
+  <path d="M31 25C26 21.5 19 21 13 23V43C19 41 26 41.5 31 45.5Z" fill="#FFFFFF"/>
+  <path d="M33 25C38 21.5 45 21 51 23V43C45 41 38 41.5 33 45.5Z" fill="#FFFFFF"/>
+  <path d="M41 19.5H46.5V33.5L43.75 31L41 33.5Z" fill="#F07C00"/>
+</svg>

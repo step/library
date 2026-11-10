@@ -11,7 +11,6 @@ import { lexend } from './lib/fonts';
 export const metadata: Metadata = {
   title: "Library",
   manifest: "/manifest.json",
-  icons: { apple: "/icon.png" },
 };
 
 export const viewport = {
