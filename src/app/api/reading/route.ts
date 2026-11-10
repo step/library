@@ -3,6 +3,7 @@ import { getBorrowedBooks } from "../../../../db/borrowedBooks";
 
 export async function GET() {
     const startTime = Date.now();
+    // Stryker disable next-line all: logging only
     console.log(`[API] GET /api/reading - Request started`);
     // The NextAuth session has no numeric id, so resolve the library user from the session email.
     const user = await getLoggedInUser();
@@ -19,7 +20,9 @@ export async function GET() {
         // Get user information from middleware headers (more efficient)
         const borrowedBooks = await getBorrowedBooks(user.id);
 
+        // Stryker disable next-line all: logging only
         const duration = Date.now() - startTime;
+        // Stryker disable next-line all: logging only
         console.log(`[API] GET /api/reading - Success: ${borrowedBooks.length} borrowed books returned for ${user.name} in ${duration}ms`);
 
         return Response.json(borrowedBooks, {
@@ -29,7 +32,9 @@ export async function GET() {
         });
 
     } catch (error) {
+        // Stryker disable next-line all: logging only
         const duration = Date.now() - startTime;
+        // Stryker disable next-line all: logging only
         console.error(`[API] GET /api/reading - Error after ${duration}ms:`, error);
 
         return Response.json(

@@ -13,6 +13,7 @@ const findBookByIsbn = async (sql: SQL, isbn: string): Promise<Book> => {
     if (rows.length === 0) {
         const book = await findBook(isbn);
         if (!book) {
+            // Stryker disable next-line all: logging only
             console.log("No book found with the provided ISBN.", isbn);
             throw new Error("Book not found");
         }
@@ -40,6 +41,7 @@ const findBookByIsbn = async (sql: SQL, isbn: string): Promise<Book> => {
 
 export async function GET(request: NextRequest) {
     const startTime = Date.now();
+    // Stryker disable next-line all: logging only
     console.log(`[API] GET /api/book - Request started`);
     
     const session = await getServerSession(authOptions);
@@ -57,6 +59,7 @@ export async function GET(request: NextRequest) {
         
         // Validate required parameters
         if (!barcode) {
+            // Stryker disable next-line all: logging only
             console.log(`[API] GET /api/book - Missing barcode parameter`);
             return Response.json(
                 { error: "Validation failed", message: "Barcode query parameter is required" },
@@ -65,6 +68,7 @@ export async function GET(request: NextRequest) {
         }
         
         if (typeof barcode !== 'string' || barcode.trim().length === 0) {
+            // Stryker disable next-line all: logging only
             console.log(`[API] GET /api/book - Invalid barcode format`);
             return Response.json(
                 { error: "Validation failed", message: "Barcode must be a non-empty string" },
@@ -72,12 +76,15 @@ export async function GET(request: NextRequest) {
             );
         }
         
+        // Stryker disable next-line all: logging only
         console.log(`[API] GET /api/book - Searching for barcode: ${barcode}`);
         
         const sql = neon(`${process.env.DATABASE_URL}`);
         const book = await findBookByIsbn(sql, barcode.trim());
         
+        // Stryker disable next-line all: logging only
         const duration = Date.now() - startTime;
+        // Stryker disable next-line all: logging only
         console.log(`[API] GET /api/book - Success: Book found for barcode ${barcode} in ${duration}ms`);
         
         return Response.json(book, {
@@ -87,9 +94,11 @@ export async function GET(request: NextRequest) {
         });
         
     } catch (error) {
+        // Stryker disable next-line all: logging only
         const duration = Date.now() - startTime;
         
         if (error instanceof Error && error.message === "Book not found") {
+            // Stryker disable next-line all: logging only
             console.log(`[API] GET /api/book - Book not found after ${duration}ms`);
             return Response.json(
                 { error: "Not found", message: "Book not found" },
@@ -97,6 +106,7 @@ export async function GET(request: NextRequest) {
             );
         }
         
+        // Stryker disable next-line all: logging only
         console.error(`[API] GET /api/book - Error after ${duration}ms:`, error);
         return Response.json(
             { error: "Internal Server Error", message: "Failed to fetch book" },

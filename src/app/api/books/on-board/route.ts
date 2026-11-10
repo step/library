@@ -13,12 +13,14 @@ const createForbiddenResponse = (message: string) => {
 
 export const POST = async (req: NextRequest) => {
     const startTime = Date.now();
+    // Stryker disable next-line all: logging only
     console.log(`[API] POST /api/books/on-board - Request started`);
 
     try {
         // Require admin user for book onboarding
         const user = await getLoggedInUser();
         if (!user || !user.isAdmin) {
+            // Stryker disable next-line all: logging only
             console.log(`[API] POST /api/books/on-board - Rejected non-admin request`);
             return createForbiddenResponse("Only administrators can onboard books");
         }
@@ -41,7 +43,9 @@ export const POST = async (req: NextRequest) => {
         // Invalidate cache after successful book onboarding
         await invalidateBooksCache();
 
+        // Stryker disable next-line all: logging only
         const duration = Date.now() - startTime;
+        // Stryker disable next-line all: logging only
         console.log(`[API] POST /api/books/on-board - Success: Book "${title}" onboarded by ${user.email} in ${duration}ms`);
 
         return Response.json(
@@ -50,14 +54,17 @@ export const POST = async (req: NextRequest) => {
         );
 
     } catch (error) {
+        // Stryker disable next-line all: logging only
         const duration = Date.now() - startTime;
 
         // Handle admin access errors specifically
         if (error instanceof Error && error.message.includes('Access denied')) {
+            // Stryker disable next-line all: logging only
             console.log(`[API] POST /api/books/on-board - ${error.message} in ${duration}ms`);
             return createForbiddenResponse("Only administrators can onboard books");
         }
 
+        // Stryker disable next-line all: logging only
         console.error(`[API] POST /api/books/on-board - Error after ${duration}ms:`, error);
 
         return Response.json(

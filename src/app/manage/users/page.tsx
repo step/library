@@ -1,8 +1,10 @@
 import BackLink from "@/components/manage/BackLink";
 import { getAllLibraryUsers } from "../../../../db/user";
 import UsersManager from "./UsersManager";
+import { requireAdminPage } from "@/app/lib/admin";
 
 const UsersPage = async () => {
+    await requireAdminPage();
     const users = await getAllLibraryUsers();
 
     return (

@@ -19,6 +19,7 @@ export const borrowBook = async (barcode: string) => {
         
         return { success: response.ok, data: body };
     } catch (error) {
+        // Stryker disable next-line all: logging only
         console.error("Error borrowing book:", error);
         return { success: false, data: { message: "Failed to borrow book. Please try again." } };
     }
@@ -54,6 +55,7 @@ export const returnBook = async (barcode: string) => {
         
         return { success: response.ok, data: body };
     } catch (error) {
+        // Stryker disable next-line all: logging only
         console.error("Error returning book:", error);
         return { success: false, data: { message: "Failed to return book. Please try again." } };
     }

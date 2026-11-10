@@ -8,11 +8,11 @@ type Author = {
 }
 
 const findBookFromGoogleApi = async (barcode: string) => {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${barcode}`);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(barcode)}`);
+    if (!response.ok) return;
     const data = await response.json();
-    if (data.totalItems === 0) return;
-    const book = data.items[0].volumeInfo;
-
+    const book = data?.items?.[0]?.volumeInfo;
+    if (!book?.title) return;
     return {
         title: book.title,
         authors: book.authors ? book.authors.join(", ") : "",
@@ -22,11 +22,11 @@ const findBookFromGoogleApi = async (barcode: string) => {
 }
 
 const findBookByOpenLibraryApi = async (barcode: string) => {
-    const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${barcode}&format=json&jscmd=data`);
+    const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(barcode)}&format=json&jscmd=data`);
+    if (!response.ok) return;
     const data = await response.json();
-    const bookKey = `ISBN:${barcode}`;
-    if (!data[bookKey]) return;
-    const book = data[bookKey];
+    const book = data?.[`ISBN:${barcode}`];
+    if (!book?.title) return;
     return {
         title: book.title,
         authors: book.authors ? book.authors.map((author: Author) => author.name).join(",") : "",
@@ -35,10 +35,13 @@ const findBookByOpenLibraryApi = async (barcode: string) => {
     }
 }
 
-export const findBook = async (barcode: string) => {
-    const bookFromGoogle = findBookFromGoogleApi(barcode);
-    const bookFromOpenLibrary = findBookByOpenLibraryApi(barcode);
-    const [googleBook, openLibraryBook] = await Promise.all([bookFromGoogle, bookFromOpenLibrary]);
+type FoundBook = { title: string; authors: string; isbn10: string; isbn13: string };
 
+/** Asks both services at once. One being down or returning junk must not hide the other's answer. */
+export const findBook = async (barcode: string): Promise<FoundBook | undefined> => {
+    const [googleBook, openLibraryBook] = await Promise.all([
+        findBookFromGoogleApi(barcode).catch(() => undefined),
+        findBookByOpenLibraryApi(barcode).catch(() => undefined),
+    ]);
     return googleBook || openLibraryBook;
 }
