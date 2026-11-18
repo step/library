@@ -14,7 +14,7 @@ An issue is marked **DONE** only once its migration is written, committed under 
 | 6 | Redundant indexes | **DONE** (`0006_drop_redundant_indexes`) |
 | 7 | Minor items | **DONE** (`0007_timestamptz_and_text_titles`) |
 | 8 | `db-restore.sh` pooler | **DONE** |
-| 9 | Dev holds prod data | open |
+| 9 | Dev holds prod data | prod stays prod; see issue |
 | 10 | Credentials exposed | open |
 
 ## Schema issues
@@ -158,9 +158,7 @@ Plain SQL dumps begin with `SELECT pg_catalog.set_config('search_path', '', fals
 
 The dev database was populated from a production dump, so `sessions` and `accounts` contain live session and OAuth tokens, and `library_users` and `users` contain real emails.
 
-**Plan changed:** `library-dev` will become the production database. The prod app will be pointed at it once everything is fixed and verified, so migrations 0001 onwards are not applied to prod separately. Do **not** clear `sessions` and `accounts`, and keep the same `NEXTAUTH_SECRET`, or every user is signed out.
-
-**Before cutover:** dev is only a copy of prod from some earlier point, and prod keeps taking borrows and returns. Re-sync first: take a fresh dump of prod, restore it into the target database with `scripts/db-restore.sh`, then replay the migrations. Switching to the current `library-dev` unchanged would lose recent prod data. A diff on 2026-11-09 already showed `borrowed_books` row 299 missing from dev.
+**Plan changed again (2026-11-18):** the existing production database stays production; there is no cutover to `library-dev`. Production gets migrations through the Vercel deploy instead: `vercel-build` runs `scripts/migrate.mjs` after `next build` on production deploys only. Prod has no migration history yet, so its first such deploy applies 0000 to 0010 in one transaction (0000 is idempotent). If any statement fails on prod data, everything rolls back and the deploy fails. Rehearse it on a fresh prod dump first.
 
 ### 10. Credentials exposed in chat
 
