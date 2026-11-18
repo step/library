@@ -4,11 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { FakeBarcodeScanner, lastScannerProps, resetScanner } from "../../test/helpers/fakes";
 
 vi.mock("next/dynamic", () => ({ default: () => FakeBarcodeScanner }));
+vi.mock("next/font/google", () => ({ Lexend: () => ({ className: "lx", variable: "--font-lexend" }) }));
 
-const api = vi.hoisted(() => ({ borrowBook: vi.fn(), returnBook: vi.fn() }));
+const api = vi.hoisted(() => ({ borrowBook: vi.fn(), returnBook: vi.fn(), saveRating: vi.fn() }));
 vi.mock("@/app/BooksApi", () => api);
 const refresh = vi.hoisted(() => vi.fn());
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+const push = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push }) }));
 
 import Scanner from "../Scanner";
 import BorrowBook from "../../src/app/BorrowBook";
@@ -232,5 +234,45 @@ describe("ReturnBook flows", () => {
         const { onResult } = lastScannerProps();
         await act(async () => { onResult("qr-1"); onResult("qr-1"); });
         expect(api.returnBook).toHaveBeenCalledTimes(1);
+    });
+});
+
+
+describe("ReturnBook: rating after a return", () => {
+    const book = { id: 7, title: "Dune", authors: "Frank Herbert", myRating: null };
+    const scan = async () => {
+        await userEvent.click(screen.getByRole("button", { name: "Scan QR code" }));
+        await userEvent.click(screen.getByText("fake scan ok"));
+    };
+
+    it("offers to rate the returned book instead of a toast", async () => {
+        api.returnBook.mockResolvedValue({ success: true, data: { message: "Book returned successfully", book } });
+        render(<ReturnBook />);
+        await scan();
+        const dialog = await screen.findByRole("dialog", { name: "Book returned" });
+        expect(dialog).toHaveTextContent("Dune");
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        expect(push).not.toHaveBeenCalled();
+    });
+
+    it("after saving a rating, goes to Past reads with the 'rated' toast", async () => {
+        api.returnBook.mockResolvedValue({ success: true, data: { book } });
+        api.saveRating.mockResolvedValue({ success: true });
+        render(<ReturnBook />);
+        await scan();
+        await userEvent.click(await screen.findByRole("radio", { name: "5 stars" }));
+        await userEvent.click(screen.getByRole("button", { name: "Save rating" }));
+        expect(api.saveRating).toHaveBeenCalledWith(7, 5);
+        expect(push).toHaveBeenCalledWith("/history?toast=rated");
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("skipping goes to Past reads with the 'returned' toast", async () => {
+        api.returnBook.mockResolvedValue({ success: true, data: { book } });
+        render(<ReturnBook />);
+        await scan();
+        await userEvent.click(await screen.findByRole("button", { name: "Skip for now" }));
+        expect(api.saveRating).not.toHaveBeenCalled();
+        expect(push).toHaveBeenCalledWith("/history?toast=returned");
     });
 });

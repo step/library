@@ -6,11 +6,11 @@ import {
 describe("harness", () => {
     it("has every migration applied", async () => {
         const tables = (await q<{ table_name: string }>(`SELECT table_name FROM information_schema.tables WHERE table_schema='public'`)).map(t => t.table_name);
-        for (const t of ["books", "book_copies", "borrowed_books", "library_users", "users", "accounts", "sessions", "verification_token", "books_db"]) {
+        for (const t of ["books", "book_copies", "borrowed_books", "library_users", "users", "accounts", "sessions", "verification_token", "books_db", "book_ratings"]) {
             expect(tables).toContain(t);
         }
         const triggers = (await q<{ tgname: string }>(`SELECT tgname FROM pg_trigger WHERE NOT tgisinternal`)).map(t => t.tgname);
-        expect(triggers).toEqual(expect.arrayContaining(["trg_book_copies_sync_counts", "trg_borrowed_books_sync_flag"]));
+        expect(triggers).toEqual(expect.arrayContaining(["trg_book_copies_sync_counts", "trg_borrowed_books_sync_flag", "trg_book_ratings_sync_totals", "trg_book_ratings_truncate_totals"]));
         const [{ type }] = await q<{ type: string }>(`SELECT data_type AS type FROM information_schema.columns WHERE table_name='borrowed_books' AND column_name='borrowed_at'`);
         expect(type).toBe("timestamp with time zone");
     });

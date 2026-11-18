@@ -9,7 +9,7 @@ export const q = async <T extends pg.QueryResultRow = pg.QueryResultRow>(text: s
 export const closeFixtures = () => pool.end();
 
 export const truncateAll = () =>
-    pool.query(`TRUNCATE books, book_copies, borrowed_books, library_users, users, accounts, sessions,
+    pool.query(`TRUNCATE books, book_copies, borrowed_books, book_ratings, library_users, users, accounts, sessions,
                 verification_token, books_db RESTART IDENTITY CASCADE`);
 
 let seq = 0;

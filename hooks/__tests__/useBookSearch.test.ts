@@ -8,7 +8,7 @@ vi.mock("@/app/BooksApi", () => ({ loadBooksAfter: api.loadBooksAfter }));
 import { useBookSearch } from "../useBookSearch";
 
 const book = (id: number, title = `Book ${id}`): Book => ({
-    id, title, authors: "A", isbn10: "", isbn13: "", count: 1, borrowedCount: 0,
+    id, title, authors: "A", isbn10: "", isbn13: "", count: 1, borrowedCount: 0, ratingCount: 0, ratingAverage: null,
 });
 const INITIAL = [book(1), book(2)];
 

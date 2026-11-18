@@ -1,4 +1,4 @@
-import { pgTable, check, index, serial, integer, varchar, text, bigint, foreignKey, timestamp, unique, boolean, primaryKey, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, check, index, serial, integer, smallint, varchar, text, bigint, foreignKey, timestamp, unique, boolean, primaryKey, uniqueIndex } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -110,6 +110,9 @@ export const books = pgTable("books", {
 	isbn13: varchar({ length: 13 }),
 	count: integer().default(0).notNull(),
 	borrowedCount: integer("borrowed_count").default(0).notNull(),
+	// Totals of book_ratings for this book, maintained by the sync_book_rating_totals trigger.
+	ratingCount: integer("rating_count").default(0).notNull(),
+	ratingSum: integer("rating_sum").default(0).notNull(),
 }, (table) => [
 	index("idx_books_id_title").using("btree", table.id.asc().nullsLast(), table.title.asc().nullsLast()),
 	index("idx_books_title_gin").using("gin", table.title.asc().nullsLast().op("gin_trgm_ops")),
@@ -117,6 +120,30 @@ export const books = pgTable("books", {
 	unique("books_isbn13_key").on(table.isbn13),
 	check("books_counts_check", sql`borrowed_count >= 0 AND borrowed_count <= count`),
 	check("books_has_isbn_check", sql`isbn10 IS NOT NULL OR isbn13 IS NOT NULL`),
+	check("books_rating_totals_check", sql`rating_count >= 0 AND rating_sum BETWEEN rating_count AND 5 * rating_count`),
+]);
+
+// One rating per reader per book. Rating the same book again replaces the earlier rating.
+export const bookRatings = pgTable("book_ratings", {
+	userId: integer("user_id").notNull(),
+	bookId: integer("book_id").notNull(),
+	rating: smallint().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.userId, table.bookId], name: "book_ratings_pkey" }),
+	index("idx_book_ratings_book_id").using("btree", table.bookId.asc().nullsLast()),
+	check("book_ratings_rating_check", sql`rating BETWEEN 1 AND 5`),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [libraryUsers.id],
+			name: "book_ratings_user_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.bookId],
+			foreignColumns: [books.id],
+			name: "book_ratings_book_id_fkey"
+		}).onDelete("cascade"),
 ]);
 
 export const bookCopies = pgTable("book_copies", {

@@ -21,8 +21,9 @@ import PrimaryButton from "../PrimaryButton";
 import StepIcon from "../StepIcon";
 import BackLink from "../manage/BackLink";
 import type { Book } from "../../types/Book";
+import type { ReturnedBook } from "../../types/BorrowedBook";
 
-const book = (over: Partial<Book> = {}): Book => ({ id: 1, title: "Dune", authors: "Frank Herbert", isbn10: "", isbn13: "", count: 3, borrowedCount: 1, ...over });
+const book = (over: Partial<Book> = {}): Book => ({ id: 1, title: "Dune", authors: "Frank Herbert", isbn10: "", isbn13: "", count: 3, borrowedCount: 1, ratingCount: 0, ratingAverage: null, ...over });
 
 describe("BookRow", () => {
     const stats = () => {
@@ -130,7 +131,7 @@ describe("ReadingBooks", () => {
 describe("PastReads", () => {
     beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-09T12:00:00Z")); });
     afterEach(() => vi.useRealTimers());
-    const past = (id: number, from: string, to: string) => ({ id, title: `Book ${id}`, authors: "A", borrowedDate: from, returnedDate: to });
+    const past = (id: number, from: string, to: string, over: Partial<ReturnedBook> = {}): ReturnedBook => ({ id, bookId: id, title: `Book ${id}`, authors: "A", borrowedDate: from, returnedDate: to, rating: null, ...over });
 
     it("shows a friendly empty state", () => {
         render(<PastReads books={[]} />);

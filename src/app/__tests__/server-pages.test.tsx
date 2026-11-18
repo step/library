@@ -13,7 +13,7 @@ vi.mock("../history/action", () => ({ loadReturnedBooks: m.loadReturnedBooks }))
 vi.mock("../manage/borrowed-books/action", () => ({ getAllBorrowedBooks: m.getAllBorrowedBooks }));
 vi.mock("../../../components/Books", () => ({ default: function Books() { return null; } }));
 vi.mock("@/components/ReadingBooks", () => ({ default: function ReadingBooks() { return null; } }));
-vi.mock("@/components/PastReads", () => ({ default: function PastReads() { return null; } }));
+vi.mock("@/components/PastReads", () => ({ default: function PastReads() { return null; }, ARRIVAL_TOASTS: { rated: "r", returned: "b" } }));
 vi.mock("../manage/borrowed-books/BorrowedBooks", () => ({ default: function BorrowedBooks() { return null; } }));
 vi.mock("../manage/add-book/NewBookForm", () => ({ default: function NewBookForm() { return null; } }));
 vi.mock("../manage/generate-qr-code/QrSheet", () => ({ default: function QrSheet() { return null; } }));
@@ -50,6 +50,15 @@ describe("server pages hand the loaded data to their component", () => {
         const el = (await HistoryPage()) as El;
         expect((el.type as { name: string }).name).toBe("PastReads");
         expect(el.props.books).toEqual([{ id: 3 }]);
+        expect(el.props.toast).toBeUndefined();
+    });
+    it.each([
+        ["rated", "rated"], ["returned", "returned"],
+        ["constructor", undefined], ["<script>", undefined], [["rated", "returned"], undefined],
+    ])("Past reads: ?toast=%j passes %j to the page", async (toast, expected) => {
+        m.loadReturnedBooks.mockResolvedValue([]);
+        const el = (await HistoryPage({ searchParams: Promise.resolve({ toast }) })) as El;
+        expect(el.props.toast).toBe(expected);
     });
     it("Borrowed books (admin): the list and a heading", async () => {
         m.getAllBorrowedBooks.mockResolvedValue([{ id: 4 }]);

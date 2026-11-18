@@ -45,13 +45,14 @@ There are no test commands — this project has no test suite.
 - `book_copies` — physical copies with QR codes; `borrowed` flag tracks status
 - `borrowed_books` — borrow/return history linking copies to users
 - `library_users` — app users with `is_admin` flag (separate from NextAuth tables)
+- `book_ratings` — one 1–5 star rating per (user, book); rating again replaces it. Only a user with a returned loan of the book may rate it. `books.rating_count` / `rating_sum` are kept in sync by the `sync_book_rating_totals` trigger, and the catalogue reads the average from them
 - NextAuth tables: `users`, `accounts`, `sessions`, `verification_token`
 
 Books use a GIN trigram index (`idx_books_title_gin`) for fuzzy title search. Pagination is cursor-based.
 
 ### Authentication & authorization
 
-NextAuth.js stores sessions in the database (Neon adapter). The sign-in callback checks that the Google-authenticated email exists in `library_users`. The `isAdmin` flag is injected into the session via the session callback. Middleware (`src/middleware.ts`) protects all routes except `/login` and `/api/auth/*`, passing user info as request headers to API routes.
+NextAuth.js stores sessions in the database (Neon adapter). The sign-in callback checks that the Google-authenticated email exists in `library_users`. The `isAdmin` flag is injected into the session via the session callback. There is no middleware: every page and API route checks the session itself (`getServerSession` or `getLoggedInUser()`).
 
 ### Caching strategy
 

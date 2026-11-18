@@ -9,7 +9,7 @@ const m = vi.hoisted(() => ({
     getServerSession: vi.fn(), getLoggedInUser: vi.fn(), getAllLibraryUsers: vi.fn(), addLibraryUser: vi.fn(),
     bulkAddLibraryUsers: vi.fn(), updateUserRole: vi.fn(), deleteLibraryUser: vi.fn(), getBorrowedBooks: vi.fn(),
     borrowBook: vi.fn(), returnBook: vi.fn(), onboardBook: vi.fn(), loadBooksWithSearch: vi.fn(),
-    invalidateBooksCache: vi.fn(), findBook: vi.fn(), rows: [] as unknown[],
+    invalidateBooksCache: vi.fn(), findBook: vi.fn(), saveRating: vi.fn(), deleteRating: vi.fn(), rows: [] as unknown[],
 }));
 vi.mock("next-auth", () => ({ getServerSession: m.getServerSession }));
 vi.mock("@/app/lib/auth", () => ({ authOptions: {} }));
@@ -23,6 +23,7 @@ vi.mock("../../../../db/borrowedBooks", () => ({ getBorrowedBooks: m.getBorrowed
 vi.mock("../../../../db/books", () => ({ onboardBook: m.onboardBook }));
 vi.mock("../../action", () => ({ loadBooksWithSearch: m.loadBooksWithSearch, invalidateBooksCache: m.invalidateBooksCache }));
 vi.mock("../book/books-archeive", () => ({ findBook: m.findBook }));
+vi.mock("../../../../db/ratings", () => ({ saveRating: m.saveRating, deleteRating: m.deleteRating }));
 
 import { GET as getBooks } from "../books/route";
 import { POST as borrow } from "../books/borrow/route";
@@ -34,6 +35,7 @@ import { GET as getBook } from "../book/route";
 import { GET as listUsers, POST as addUser } from "../users/route";
 import { POST as bulk } from "../users/bulk/route";
 import { PATCH as patchUser, DELETE as deleteUser } from "../users/[id]/route";
+import { PUT as putRating, DELETE as deleteRating } from "../ratings/[bookId]/route";
 
 const post = (url: string, body: unknown) => makeRequest(url, { method: "POST", body });
 const expectJson = async (res: Response, status: number, body: unknown) => {
@@ -269,5 +271,85 @@ describe("/api/users", () => {
             m.deleteLibraryUser.mockRejectedValue(new Error("x"));
             await expectJson(await del("5"), 500, { error: "Internal Server Error" });
         });
+    });
+});
+
+
+describe.each([
+    ["POST /api/books/return", booksReturn, "/api/books/return"],
+    ["POST /api/reading/return", readingReturn, "/api/reading/return"],
+])("%s hands back the book for the rating prompt", (_name, handler, url) => {
+    it("200 includes the book and the reader's existing rating", async () => {
+        const book = { id: 7, title: "Dune", authors: "Frank Herbert", myRating: 4 };
+        m.returnBook.mockResolvedValue({ success: true, message: "ok", book });
+        await expectJson(await handler(post(url, { barcode: "qr-1" })), 200, { message: "Book returned successfully", barcode: "qr-1", book });
+    });
+});
+
+describe("PUT /api/ratings/[bookId]", () => {
+    const put = (id: string, body: unknown, raw?: string) =>
+        putRating(makeRequest(`/api/ratings/${id}`, raw !== undefined ? { method: "PUT", rawBody: raw } : { method: "PUT", body }), { params: Promise.resolve({ bookId: id }) });
+    const INVALID = { error: "Validation failed", message: "Rating must be a whole number from 1 to 5" };
+
+    it("401 when not signed in as a library user", async () => {
+        m.getLoggedInUser.mockResolvedValue(null);
+        await expectJson(await put("7", { rating: 4 }), 401, { error: "Authentication required", message: "User not logged in" });
+        expect(m.saveRating).not.toHaveBeenCalled();
+    });
+    it.each(["abc", "-1", "1.5", "0x10", "99999999999"])("400 for book id %s", async (id) => {
+        await expectJson(await put(id, { rating: 4 }), 400, { error: "Validation failed", message: "Invalid book id" });
+        expect(m.saveRating).not.toHaveBeenCalled();
+    });
+    it.each([[0], [6], [4.5], ["4"], [null], [true]])("400 for rating %j", async (rating) => {
+        await expectJson(await put("7", { rating }), 400, INVALID);
+        expect(m.saveRating).not.toHaveBeenCalled();
+    });
+    it("400 for a missing or malformed body", async () => {
+        await expectJson(await put("7", {}), 400, INVALID);
+        await expectJson(await put("7", undefined, "{not json"), 400, INVALID);
+    });
+    it("200 saves for the signed-in reader and refreshes the cached catalogue", async () => {
+        m.saveRating.mockResolvedValue("saved");
+        await expectJson(await put("7", { rating: 5 }), 200, { message: "Rating saved", bookId: 7, rating: 5 });
+        expect(m.saveRating).toHaveBeenCalledWith(MEMBER.id, 7, 5);
+        expect(m.invalidateBooksCache).toHaveBeenCalledTimes(1);
+    });
+    it("403 when the reader has not returned the book", async () => {
+        m.saveRating.mockResolvedValue("not-returned");
+        await expectJson(await put("7", { rating: 5 }), 403, { error: "Forbidden", message: "You can only rate books you have returned" });
+        expect(m.invalidateBooksCache).not.toHaveBeenCalled();
+    });
+    it("404 for an unknown book", async () => {
+        m.saveRating.mockResolvedValue("book-not-found");
+        await expectJson(await put("7", { rating: 5 }), 404, { error: "Not found", message: "Book not found" });
+        expect(m.invalidateBooksCache).not.toHaveBeenCalled();
+    });
+    it("500 with a generic message when something throws", async () => {
+        m.saveRating.mockRejectedValue(new Error("secret detail"));
+        await expectJson(await put("7", { rating: 5 }), 500, { error: "Internal Server Error", message: "Failed to save rating" });
+    });
+});
+
+describe("DELETE /api/ratings/[bookId]", () => {
+    const del = (id: string) => deleteRating(makeRequest(`/api/ratings/${id}`, { method: "DELETE" }), { params: Promise.resolve({ bookId: id }) });
+
+    it("401 when not signed in as a library user", async () => {
+        m.getLoggedInUser.mockResolvedValue(null);
+        await expectJson(await del("7"), 401, { error: "Authentication required", message: "User not logged in" });
+        expect(m.deleteRating).not.toHaveBeenCalled();
+    });
+    it("400 for a bad book id", async () => {
+        await expectJson(await del("x"), 400, { error: "Validation failed", message: "Invalid book id" });
+        expect(m.deleteRating).not.toHaveBeenCalled();
+    });
+    it("200 removes the signed-in reader's rating and refreshes the cached catalogue", async () => {
+        m.deleteRating.mockResolvedValue(undefined);
+        await expectJson(await del("7"), 200, { message: "Rating removed", bookId: 7 });
+        expect(m.deleteRating).toHaveBeenCalledWith(MEMBER.id, 7);
+        expect(m.invalidateBooksCache).toHaveBeenCalledTimes(1);
+    });
+    it("500 with a generic message when something throws", async () => {
+        m.deleteRating.mockRejectedValue(new Error("secret detail"));
+        await expectJson(await del("7"), 500, { error: "Internal Server Error", message: "Failed to remove rating" });
     });
 });

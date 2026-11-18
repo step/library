@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         console.log(`[API] POST /api/reading/return - Success: Book returned for ${loggedInUser.name} in ${duration}ms`);
         
         return Response.json(
-            { message: "Book returned successfully", barcode: barcode.trim() },
+            { message: "Book returned successfully", barcode: barcode.trim(), book: result.book },
             { status: 200 }
         );
         

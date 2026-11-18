@@ -71,6 +71,13 @@
       "when": 1794168500000,
       "tag": "0009_lock_book_before_count_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794937158221,
+      "tag": "0010_book_ratings",
+      "breakpoints": true
     }
   ]
 }

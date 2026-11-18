@@ -28,7 +28,7 @@ vi.mock("react-virtuoso", () => ({
 import Books from "../Books";
 import Searchbar from "../Searchbar";
 
-const book = (id: number, title = `Book ${id}`, over: Partial<Book> = {}): Book => ({ id, title, authors: "Auth", isbn10: "", isbn13: "", count: 2, borrowedCount: 0, ...over });
+const book = (id: number, title = `Book ${id}`, over: Partial<Book> = {}): Book => ({ id, title, authors: "Auth", isbn10: "", isbn13: "", count: 2, borrowedCount: 0, ratingCount: 0, ratingAverage: null, ...over });
 const ok = (data: Book[]) => ({ success: true, data });
 const deferred = <T,>() => { let resolve!: (v: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; };
 

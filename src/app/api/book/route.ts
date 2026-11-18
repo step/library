@@ -7,8 +7,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
 
 type SQL = NeonQueryFunction<false, false>;
+// A catalogue lookup for a book being added: it has no ratings yet.
+type LookedUpBook = Omit<Book, "ratingCount" | "ratingAverage">;
 
-const findBookByIsbn = async (sql: SQL, isbn: string): Promise<Book> => {
+const findBookByIsbn = async (sql: SQL, isbn: string): Promise<LookedUpBook> => {
     const rows = await sql`SELECT * FROM books_db WHERE isbn10 = ${isbn} OR isbn13 = ${isbn} LIMIT 1`;
     if (rows.length === 0) {
         const book = await findBook(isbn);

@@ -123,7 +123,10 @@ describe("returnBook", () => {
 
     it("returns a borrowed copy", async () => {
         const { b, u, qr, copyId } = await borrowed();
-        expect(await returnBook(u.id, qr)).toEqual({ success: true, message: "Book returned successfully" });
+        expect(await returnBook(u.id, qr)).toEqual({
+            success: true, message: "Book returned successfully",
+            book: { id: b.id, title: expect.any(String), authors: "Some Author", myRating: null },
+        });
         expect(await copyBorrowed(qr)).toBe(false);
         expect(await bookCounts(b.id)).toEqual({ count: 1, borrowed: 0 });
         const [loan] = await loansFor(copyId);
@@ -241,8 +244,8 @@ describe("getReturnedBooks", () => {
         const list = await getReturnedBooks(u.id);
         expect(list.map(x => x.title)).toEqual(["B", "A"]);
         expect(list[0]).toEqual({
-            id: l2, title: "B", authors: "Some Author",
-            borrowedDate: "2026-02-01T10:00:00.000Z", returnedDate: "2026-02-05T10:00:00.000Z",
+            id: l2, bookId: b.id, title: "B", authors: "Some Author",
+            borrowedDate: "2026-02-01T10:00:00.000Z", returnedDate: "2026-02-05T10:00:00.000Z", rating: null,
         });
     });
 
@@ -333,11 +336,11 @@ describe("transactions", () => {
     describe("returnBook", () => {
         const borrowed = async () => { const b = await insertBook(); const u = await insertUser(); await borrowBook(u.id, b.qrs[0]); return { b, u }; };
 
-        it("runs as one transaction: BEGIN, lock the copy, update, COMMIT", async () => {
+        it("runs as one transaction: BEGIN, lock the copy, update, read the book, COMMIT", async () => {
             const { b, u } = await borrowed();
             const log = record();
             await returnBook(u.id, b.qrs[0]);
-            expect(log).toEqual(["BEGIN", "SELECT", "UPDATE", "COMMIT"]);
+            expect(log).toEqual(["BEGIN", "SELECT", "UPDATE", "SELECT", "COMMIT"]);
             expect(await openTransactions()).toBe(0);
         });
         it("rolls back for an unknown code and for a copy on the shelf", async () => {

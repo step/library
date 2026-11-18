@@ -33,7 +33,7 @@ describe("getBooks: browsing", () => {
         const u = await insertUser();
         await openLoan(b.copyIds[0], u.id);
         expect(await getBooks("", 20)).toEqual([{
-            id: b.id, title: "Dune", authors: "Some Author", isbn10: "0441172717", isbn13: "9780441172719", count: 2, borrowedCount: 1,
+            id: b.id, title: "Dune", authors: "Some Author", isbn10: "0441172717", isbn13: "9780441172719", count: 2, borrowedCount: 1, ratingCount: 0, ratingAverage: null,
         }]);
     });
 
@@ -151,7 +151,7 @@ describe("loadBooks and loadBooksWithSearch (server-side data for the pages)", (
         await seed(Array.from({ length: 25 }, (_, i) => `B${i}`));
         const books = await loadBooks();
         expect(books).toHaveLength(20);
-        expect(Object.keys(books[0]).sort()).toEqual(["authors", "borrowedCount", "count", "id", "isbn10", "isbn13", "title"]);
+        expect(Object.keys(books[0]).sort()).toEqual(["authors", "borrowedCount", "count", "id", "isbn10", "isbn13", "ratingAverage", "ratingCount", "title"]);
     });
 
     it("loadBooksWithSearch gives the same answers as getBooks, including literal wildcards", async () => {

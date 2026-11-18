@@ -2,7 +2,9 @@
 import LoaderOverlay from "@/components/LoaderOverlay";
 import Scanner from "@/components/Scanner";
 import Snackbar from "@/components/Snackbar";
+import RateAfterReturn from "@/components/ratings/RateAfterReturn";
 import { useSnackbar } from "@/utils/useSnackbar";
+import { ReturnedBookInfo } from "@/types/Book";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { returnBook } from "../BooksApi";
@@ -10,6 +12,8 @@ import { returnBook } from "../BooksApi";
 
 const ReturnBook = () => {
     const [loading, setLoading] = useState(false);
+    // The book just returned: offers to rate it before moving on to Past reads.
+    const [returned, setReturned] = useState<ReturnedBookInfo | null>(null);
     const { snackbar, showSuccess, showError, close } = useSnackbar();
 
     const router = useRouter();
@@ -22,13 +26,20 @@ const ReturnBook = () => {
         setLoading(true);
         const result = await returnBook(barcode);
         setLoading(false);
-        if (result.success) {
+        if (result.success && result.data?.book) {
+            setReturned(result.data.book);
+        } else if (result.success) {
             showSuccess("Book returned successfully");
             router.refresh();
         } else {
             showError(`Failed to return book: ${result.data.message}`);
         }
     }, [showSuccess, showError, setLoading, router]);
+
+    const handleRatingDone = useCallback((outcome: "rated" | "skipped") => {
+        setReturned(null);
+        router.push(`/history?toast=${outcome === "rated" ? "rated" : "returned"}`);
+    }, [router]);
 
     return (
         <div>
@@ -38,6 +49,7 @@ const ReturnBook = () => {
                 onScanError={handleScanError}
                 fab
             />
+            {returned && <RateAfterReturn book={returned} onDone={handleRatingDone} />}
             <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}

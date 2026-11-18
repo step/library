@@ -9,7 +9,10 @@ import { Book } from "@/types/Book";
 // Cached version of loadBooks with React cache for request deduplication
 export const loadBooks = cache(async (): Promise<Book[]> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
-    const rows = await sql`SELECT * FROM books ORDER BY id ASC LIMIT 20`;
+    const rows = await sql`
+        SELECT *,
+            CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END AS rating_average
+        FROM books ORDER BY id ASC LIMIT 20`;
 
     return rows.map(row => ({
         id: row.id,
@@ -19,6 +22,8 @@ export const loadBooks = cache(async (): Promise<Book[]> => {
         isbn13: row.isbn13,
         count: row.count,
         borrowedCount: row.borrowed_count,
+        ratingCount: row.rating_count,
+        ratingAverage: row.rating_average,
     }));
 });
 
@@ -38,7 +43,9 @@ export const loadBooksWithSearch = unstable_cache(
                         isbn10,
                         isbn13,
                         count,
-                        borrowed_count as "borrowedCount"
+                        borrowed_count as "borrowedCount",
+                        rating_count as "ratingCount",
+                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
                     FROM books 
                     WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${containsPattern(searchQuery)}
                     ORDER BY id 
@@ -52,7 +59,9 @@ export const loadBooksWithSearch = unstable_cache(
                         isbn10,
                         isbn13,
                         count,
-                        borrowed_count as "borrowedCount"
+                        borrowed_count as "borrowedCount",
+                        rating_count as "ratingCount",
+                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
                     FROM books 
                     WHERE id > ${parseInt(lastSeenId)}
                     ORDER BY id 
@@ -68,7 +77,9 @@ export const loadBooksWithSearch = unstable_cache(
                         isbn10,
                         isbn13,
                         count,
-                        borrowed_count as "borrowedCount"
+                        borrowed_count as "borrowedCount",
+                        rating_count as "ratingCount",
+                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
                     FROM books 
                     WHERE title ILIKE ${containsPattern(searchQuery)}
                     ORDER BY id 
@@ -82,7 +93,9 @@ export const loadBooksWithSearch = unstable_cache(
                         isbn10,
                         isbn13,
                         count,
-                        borrowed_count as "borrowedCount"
+                        borrowed_count as "borrowedCount",
+                        rating_count as "ratingCount",
+                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
                     FROM books 
                     ORDER BY id 
                     LIMIT ${size}

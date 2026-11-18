@@ -2,6 +2,7 @@ import '@/app/lib/neon-local';
 import { neon } from '@neondatabase/serverless';
 import { pool } from '../src/app/lib/db';
 import { BorrowedBook, ReturnedBook } from '../types/BorrowedBook';
+import { ReturnedBookInfo } from '../types/Book';
 
 export const getBorrowedBooks = async (userId: number): Promise<BorrowedBook[]> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
@@ -25,20 +26,24 @@ export const getBorrowedBooks = async (userId: number): Promise<BorrowedBook[]> 
 export const getReturnedBooks = async (userId: number): Promise<ReturnedBook[]> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
 
-    const rows = await sql`SELECT bb.id, b.title, b.authors, bb.borrowed_at, bb.returned_at
+    // The rating belongs to the book, so every loan of the same book shows the same rating.
+    const rows = await sql`SELECT bb.id, b.id AS book_id, b.title, b.authors, bb.borrowed_at, bb.returned_at, br.rating
         FROM borrowed_books bb
         JOIN book_copies bc ON bb.book_copy_id = bc.id
         JOIN books b ON bc.book_id = b.id
+        LEFT JOIN book_ratings br ON br.user_id = bb.user_id AND br.book_id = b.id
         WHERE bb.user_id = ${userId} AND bb.returned_at IS NOT NULL
         ORDER BY bb.returned_at DESC;
     `;
 
     return rows.map(row => ({
         id: row.id,
+        bookId: row.book_id,
         title: row.title,
         authors: row.authors,
         borrowedDate: new Date(row.borrowed_at).toISOString(),
-        returnedDate: new Date(row.returned_at).toISOString()
+        returnedDate: new Date(row.returned_at).toISOString(),
+        rating: row.rating ?? null,
     }));
 }
 
@@ -132,7 +137,14 @@ export const borrowBook = async (userId: number, qrCode: string): Promise<Borrow
     }
 };
 
-export const returnBook = async (userId: number, barcode: string): Promise<{ success: boolean; message: string }> => {
+type ReturnBookResponse = {
+    success: boolean;
+    message: string;
+    /** On success: the returned book and the reader's existing rating of it, for the rating prompt. */
+    book?: ReturnedBookInfo;
+}
+
+export const returnBook = async (userId: number, barcode: string): Promise<ReturnBookResponse> => {
     const client = await pool.connect();
 
     try {
@@ -176,8 +188,20 @@ export const returnBook = async (userId: number, barcode: string): Promise<{ suc
 
         // book_copies.borrowed (and books.borrowed_count) are maintained by triggers on borrowed_books.
 
+        const bookResult = await client.query(`
+            SELECT b.id, b.title, b.authors, br.rating
+            FROM books b
+            LEFT JOIN book_ratings br ON br.book_id = b.id AND br.user_id = $2
+            WHERE b.id = $1
+        `, [bookCopy.book_id, userId]);
+        const row = bookResult.rows[0];
+
         await client.query('COMMIT');
-        return { success: true, message: 'Book returned successfully' };
+        return {
+            success: true,
+            message: 'Book returned successfully',
+            book: { id: row.id, title: row.title, authors: row.authors, myRating: row.rating ?? null },
+        };
 
     } catch (error) {
         await client.query('ROLLBACK');

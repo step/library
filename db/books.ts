@@ -16,7 +16,9 @@ const getBooksFirstPage = async (sql: SQL, searchQuery: string, size: number): P
                 isbn10,
                 isbn13,
                 count,
-                borrowed_count as "borrowedCount"
+                borrowed_count as "borrowedCount",
+                rating_count as "ratingCount",
+                CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
             FROM books 
             WHERE title ILIKE ${containsPattern(searchQuery)}
             ORDER BY id 
@@ -30,7 +32,9 @@ const getBooksFirstPage = async (sql: SQL, searchQuery: string, size: number): P
                 isbn10,
                 isbn13,
                 count,
-                borrowed_count as "borrowedCount"
+                borrowed_count as "borrowedCount",
+                rating_count as "ratingCount",
+                CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
             FROM books 
             ORDER BY id 
             LIMIT ${size}
@@ -48,7 +52,9 @@ const getBooksAfterCursor = async (sql: SQL, searchQuery: string, size: number, 
                 isbn10,
                 isbn13,
                 count,
-                borrowed_count as "borrowedCount"
+                borrowed_count as "borrowedCount",
+                rating_count as "ratingCount",
+                CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
             FROM books 
             WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${containsPattern(searchQuery)}
             ORDER BY id 
@@ -62,7 +68,9 @@ const getBooksAfterCursor = async (sql: SQL, searchQuery: string, size: number, 
                 isbn10,
                 isbn13,
                 count,
-                borrowed_count as "borrowedCount"
+                borrowed_count as "borrowedCount",
+                rating_count as "ratingCount",
+                CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
             FROM books 
             WHERE id > ${parseInt(lastSeenId)}
             ORDER BY id 

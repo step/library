@@ -21,6 +21,8 @@ const db = vi.hoisted(() => ({
     invalidateBooksCache: vi.fn(),
     findBook: vi.fn(),
     getServerSession: vi.fn(),
+    saveRating: vi.fn(),
+    deleteRating: vi.fn(),
 }));
 
 vi.mock("next-auth", () => ({ getServerSession: db.getServerSession }));
@@ -48,6 +50,7 @@ vi.mock("../../action", () => ({
     invalidateBooksCache: db.invalidateBooksCache,
 }));
 vi.mock("../book/books-archeive", () => ({ findBook: db.findBook }));
+vi.mock("../../../../db/ratings", () => ({ saveRating: db.saveRating, deleteRating: db.deleteRating }));
 
 import { GET as getBooks } from "../books/route";
 import { POST as borrow } from "../books/borrow/route";
@@ -59,6 +62,9 @@ import { GET as getBook } from "../book/route";
 import { GET as listUsers, POST as addUser } from "../users/route";
 import { POST as bulkUsers } from "../users/bulk/route";
 import { PATCH as patchUser, DELETE as deleteUser } from "../users/[id]/route";
+import { PUT as putRating, DELETE as deleteRatingRoute } from "../ratings/[bookId]/route";
+
+const bookParams = (bookId: string) => ({ params: Promise.resolve({ bookId }) });
 
 type Case = {
     name: string;
@@ -148,6 +154,18 @@ const CASES: Case[] = [
         expected: { anonymous: 403, member: 403, admin: 200 },
         guarded: ["deleteLibraryUser"],
     },
+    {
+        name: "PUT /api/ratings/[bookId]",
+        call: () => putRating(makeRequest("/api/ratings/7", { method: "PUT", body: { rating: 4 } }), bookParams("7")),
+        expected: { anonymous: 401, member: 200, admin: 200 },
+        guarded: ["saveRating", "invalidateBooksCache"],
+    },
+    {
+        name: "DELETE /api/ratings/[bookId]",
+        call: () => deleteRatingRoute(makeRequest("/api/ratings/7", { method: "DELETE" }), bookParams("7")),
+        expected: { anonymous: 401, member: 200, admin: 200 },
+        guarded: ["deleteRating", "invalidateBooksCache"],
+    },
 ];
 
 beforeEach(() => {
@@ -168,6 +186,8 @@ beforeEach(() => {
     db.updateUserRole.mockResolvedValue(undefined);
     db.deleteLibraryUser.mockResolvedValue(undefined);
     db.findBook.mockResolvedValue({ title: "T", authors: "A", isbn10: "", isbn13: "" });
+    db.saveRating.mockResolvedValue("saved");
+    db.deleteRating.mockResolvedValue(undefined);
 });
 
 describe("route authorisation matrix", () => {
@@ -220,6 +240,7 @@ describe("route authorisation matrix", () => {
             "/books/borrow",
             "/books/on-board",
             "/books/return",
+            "/ratings/[bookId]",
             "/reading",
             "/reading/return",
             "/users",
