@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AppShell from '../../components/AppShell';
-import { getServerSession } from "next-auth";
-import { authOptions } from './lib/auth';
+import { getSession } from './lib/session';
 import Login from '../../components/Login';
 import SessionProviderWrapper from "./SessionProviderWrapper";
 import { lexend } from './lib/fonts';
@@ -22,7 +21,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   return (
     <html lang="en">
       <body className={`${lexend.className} ${lexend.variable}`}>

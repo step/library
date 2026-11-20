@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '../lib/auth';
+import { getSession } from '../lib/session';
 import { lexend } from '../lib/fonts';
 import '../../../styles/Manage.css';
 
@@ -9,7 +8,7 @@ export default async function ManagementLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const user = session?.user;
   if (!user || !user.isAdmin) {
     redirect(user ? '/' : '/login');

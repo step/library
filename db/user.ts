@@ -1,11 +1,12 @@
-import { authOptions } from "@/app/lib/auth"
-import { getServerSession } from "next-auth"
+import { cache } from "react";
+import { getSession } from "@/app/lib/session";
 import { User } from "../types/User";
 import "@/app/lib/neon-local";
 import { neon } from "@neondatabase/serverless";
 
-export const getLoggedInUser = async (): Promise<User | null> => {
-    const session = await getServerSession(authOptions);
+// Cached per server render: a layout and its page may both ask for the user.
+export const getLoggedInUser = cache(async (): Promise<User | null> => {
+    const session = await getSession();
     if (!session || !session.user) {
         return null;
     }
@@ -25,7 +26,7 @@ export const getLoggedInUser = async (): Promise<User | null> => {
         isAdmin: user[0].isAdmin,
         batchId: user[0].batchId,
     };
-}
+});
 
 export const checkUserExists = async (email: string): Promise<boolean> => {
     const sql = neon(`${process.env.DATABASE_URL}`);
