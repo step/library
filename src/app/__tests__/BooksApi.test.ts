@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const m = vi.hoisted(() => ({ invalidateBooksCache: vi.fn() }));
-vi.mock("../action", () => ({ invalidateBooksCache: m.invalidateBooksCache }));
-
 import { borrowBook, returnBook, loadBooksAfter, saveRating, removeRating } from "../BooksApi";
 
 const respond = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -29,22 +26,19 @@ describe.each([
         });
     });
 
-    it("on success returns the body and refreshes the books cache once", async () => {
+    it("on success returns the body", async () => {
         fetchMock.mockResolvedValue(respond({ message: "ok" }));
         expect(await fn("qr-1")).toEqual({ success: true, data: { message: "ok" } });
-        expect(m.invalidateBooksCache).toHaveBeenCalledTimes(1);
     });
 
-    it.each([400, 401, 403, 500])("on HTTP %i returns the server's message and does not refresh the cache", async (status) => {
+    it.each([400, 401, 403, 500])("on HTTP %i returns the server's message", async (status) => {
         fetchMock.mockResolvedValue(respond({ message: "Book copy is already borrowed" }, status));
         expect(await fn("qr-1")).toEqual({ success: false, data: { message: "Book copy is already borrowed" } });
-        expect(m.invalidateBooksCache).not.toHaveBeenCalled();
     });
 
     it("when the network fails returns a friendly message instead of throwing", async () => {
         fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
         expect(await fn("qr-1")).toEqual({ success: false, data: { message: failMessage } });
-        expect(m.invalidateBooksCache).not.toHaveBeenCalled();
     });
 
     it("when the response is not JSON returns the friendly message", async () => {
@@ -131,12 +125,5 @@ describe("saveRating / removeRating", () => {
         expect(await saveRating(7, 4)).toEqual({ success: false, reason: "offline" });
         expect(await removeRating(7)).toEqual({ success: false, reason: "offline" });
         expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("never refreshes the books cache from the browser (the route does it)", async () => {
-        online(true);
-        fetchMock.mockResolvedValue(respond({}));
-        await saveRating(7, 4);
-        expect(m.invalidateBooksCache).not.toHaveBeenCalled();
     });
 });

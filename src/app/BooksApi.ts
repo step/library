@@ -1,5 +1,3 @@
-import { invalidateBooksCache } from "./action";
-
 export const borrowBook = async (barcode: string) => {
     try {
         const response = await fetch("/api/books/borrow", {
@@ -11,12 +9,6 @@ export const borrowBook = async (barcode: string) => {
         });
 
         const body = await response.json();
-        
-        // Invalidate cache after successful borrow operation
-        if (response.ok) {
-            await invalidateBooksCache();
-        }
-        
         return { success: response.ok, data: body };
     } catch (error) {
         // Stryker disable next-line all: logging only
@@ -47,12 +39,6 @@ export const returnBook = async (barcode: string) => {
         });
 
         const body = await response.json();
-        
-        // Invalidate cache after successful return operation
-        if (response.ok) {
-            await invalidateBooksCache();
-        }
-        
         return { success: response.ok, data: body };
     } catch (error) {
         // Stryker disable next-line all: logging only
