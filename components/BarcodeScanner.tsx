@@ -1,4 +1,4 @@
-import { Scanner, type IScannerError } from '@yudiel/react-qr-scanner';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import IconButton from './IconButton';
 import ArrowBack from './icons/ArrowBack';
 import "../styles/BarcodeScanner.css";
@@ -21,7 +21,8 @@ const ScannerControls = (props: { onCancel: () => void }) => {
 
 type BarcodeScannerProps = {
     onResult: (result: string) => void;
-    onError: (error: IScannerError) => void;
+    // The library's error type changed between versions (unknown in 2.5, IScannerError in 2.6).
+    onError: (error: unknown) => void;
     opened: boolean;
     onCancel: () => void;
 };
