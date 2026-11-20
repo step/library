@@ -9,17 +9,16 @@ vi.mock("@/app/BooksApi", () => api);
 
 // Render every row (no windowing in jsdom) and expose the list's callbacks to the tests.
 vi.mock("react-virtuoso", () => ({
-    Virtuoso: ({ data, itemContent, endReached, components, context, initialScrollTop, onScroll }: {
+    Virtuoso: ({ data, itemContent, endReached, components, context }: {
         data: Book[]; itemContent: (i: number, b: Book) => React.ReactNode; endReached?: (i: number) => void;
-        components?: { Footer?: React.FC<{ context: unknown }> }; context?: unknown; initialScrollTop?: number; onScroll?: (e: unknown) => void;
+        components?: { Footer?: React.FC<{ context: unknown }> }; context?: unknown;
     }) => {
         const Footer = components?.Footer;
         return (
-            <div data-testid="virtuoso" data-initial-scroll={initialScrollTop}>
+            <div data-testid="virtuoso">
                 {data.map((d, i) => <div key={d.id}>{itemContent(i, d)}</div>)}
                 {Footer && <Footer context={context} />}
                 <button onClick={() => endReached?.(data.length - 1)}>end reached</button>
-                <button onClick={() => onScroll?.({ target: { scrollTop: 321 } })}>scrolled</button>
             </div>
         );
     },
@@ -216,12 +215,6 @@ describe("Books page", () => {
         await u.click(screen.getByRole("button", { name: "end reached" }));
         expect(api.loadBooksAfter).toHaveBeenCalledTimes(1);
         await act(async () => { d.resolve(ok([])); });
-    });
-
-    it("remembers the scroll position the list reports", async () => {
-        render(<Books books={[book(1)]} />);
-        await user().click(screen.getByRole("button", { name: "scrolled" }));
-        expect(screen.getByTestId("virtuoso")).toHaveAttribute("data-initial-scroll", "321");
     });
 
     it("column headings are for sighted users only", () => {

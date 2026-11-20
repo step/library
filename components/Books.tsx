@@ -1,21 +1,18 @@
 "use client";
-import React, { useCallback, Suspense, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { lexend } from '../src/app/lib/fonts';
 import "../styles/Books.css";
 import { Book } from '../types/Book';
 import Searchbar from './Searchbar';
-import AsyncSearchResults from './AsyncSearchResults';
+import { VirtualizedBookList } from './VirtualizedBookList';
 import BookListSkeleton from './BookListSkeleton';
-import { useBookSearch, useVirtualScroll } from '../hooks';
+import { useBookSearch } from '../hooks';
 
 interface BooksProps {
     books: Book[];
 }
 
-/**
- * Main Books component that handles book display, search, and virtualization
- * Optimized with memoization and Suspense boundaries for better performance
- */
+/** The catalogue: search box and a virtualised list of books that loads more as you scroll. */
 const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
     const {
         books,
@@ -29,8 +26,6 @@ const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
         initialBooks 
     });
 
-    const { lastScrollPosition, handleScroll } = useVirtualScroll();
-
     // Memoize expensive callback functions to prevent child re-renders
     const handleSearch = useCallback(() => {
         performSearch(searchQuery, false); // Force fresh search when explicitly requested
@@ -41,25 +36,6 @@ const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
             await loadMore(searchQuery, books[books.length - 1].id);
         }
     }, [loadMore, searchQuery, books]);
-
-    // Memoize props object to prevent unnecessary re-renders
-    const asyncSearchResultsProps = useMemo(() => ({
-        books,
-        isSearching,
-        searchQuery,
-        lastScrollPosition,
-        loadingMore,
-        onScroll: handleScroll,
-        onEndReached: handleEndReached
-    }), [
-        books,
-        isSearching,
-        searchQuery,
-        lastScrollPosition,
-        loadingMore,
-        handleScroll,
-        handleEndReached
-    ]);
 
     const clearSearch = useCallback(() => setSearchQuery(''), [setSearchQuery]);
     const noResults = !isSearching && books.length === 0;
@@ -86,9 +62,16 @@ const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
                         <span>Title and author</span><span>Total</span><span>Borrowed</span><span>Available</span>
                     </div>
                     <div className="bk-scroll">
-                        <Suspense fallback={<BookListSkeleton count={8} />}>
-                            <AsyncSearchResults {...asyncSearchResultsProps} />
-                        </Suspense>
+                        {/* A search that started from an empty list has nothing to show yet. */}
+                        {isSearching && books.length === 0 ? (
+                            <BookListSkeleton count={6} />
+                        ) : (
+                            <VirtualizedBookList
+                                books={books}
+                                loadingMore={loadingMore}
+                                onEndReached={handleEndReached}
+                            />
+                        )}
                     </div>
                 </div>
             )}

@@ -6,10 +6,7 @@ import { LoadingFooter } from './LoadingFooter';
 
 interface VirtualizedBookListProps {
     books: Book[];
-    lastScrollPosition: number;
     loadingMore: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onScroll: (event: any) => void;
     onEndReached: () => Promise<void>;
 }
 
@@ -18,9 +15,7 @@ interface VirtualizedBookListProps {
  */
 export const VirtualizedBookList: React.FC<VirtualizedBookListProps> = React.memo(({
     books,
-    lastScrollPosition,
     loadingMore,
-    onScroll,
     onEndReached
 }) => {
     const handleEndReached = useCallback(async () => {
@@ -36,8 +31,6 @@ export const VirtualizedBookList: React.FC<VirtualizedBookListProps> = React.mem
         <Virtuoso
             style={{ height: "100%" }}
             data={books}
-            onScroll={onScroll}
-            initialScrollTop={lastScrollPosition}
             endReached={handleEndReached}
             context={{ loadingMore }}
             components={{ Footer: LoadingFooter }}
