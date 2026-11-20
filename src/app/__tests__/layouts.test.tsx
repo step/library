@@ -13,7 +13,6 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../../db/user", () => ({ getLoggedInUser: m.getLoggedInUser, getAllLibraryUsers: m.getAllLibraryUsers }));
 vi.mock("../../../components/Login", () => ({ default: function Login() { return null; } }));
 vi.mock("../../../components/AppShell", () => ({ default: function AppShell() { return null; } }));
-vi.mock("../SessionProviderWrapper", () => ({ default: function SessionProviderWrapper() { return null; } }));
 vi.mock("../manage/users/UsersManager", () => ({ default: function UsersManager() { return null; } }));
 vi.mock("@/components/manage/BackLink", () => ({ default: function BackLink() { return null; } }));
 
@@ -50,19 +49,19 @@ describe("RootLayout", () => {
 
     it("shows the app shell for a signed-in user, with the page inside", async () => {
         const content = await bodyContent({ user: { name: "Mia", email: "mia@x.com", isAdmin: false } });
-        const shell = content.props.children as El;
+        const shell = content;
         expect(shell.type).toBe(AppShell);
         expect(shell.props.user).toEqual({ name: "Mia", email: "mia@x.com", isAdmin: false });
     });
 
     it.each([[undefined, false], [null, false], [false, false], [true, true], [1, true]])("passes isAdmin=%j to the shell as %j", async (flag, expected) => {
         const content = await bodyContent({ user: { name: "M", email: "m@x.com", isAdmin: flag } });
-        expect((content.props.children as El).props.user).toMatchObject({ isAdmin: expected });
+        expect(content.props.user).toMatchObject({ isAdmin: expected });
     });
 
     it("copes with a session that has no user object", async () => {
         const content = await bodyContent({});
-        const shell = content.props.children as El;
+        const shell = content;
         expect(shell.type).toBe(AppShell);
         expect(shell.props.user).toEqual({ name: undefined, email: undefined, isAdmin: false });
     });

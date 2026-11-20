@@ -3,7 +3,6 @@ import "./globals.css";
 import AppShell from '../../components/AppShell';
 import { getSession } from './lib/session';
 import Login from '../../components/Login';
-import SessionProviderWrapper from "./SessionProviderWrapper";
 import { lexend } from './lib/fonts';
 
 
@@ -27,11 +26,9 @@ export default async function RootLayout({
       <body className={`${lexend.className} ${lexend.variable}`}>
         {
           !session ? <Login /> : (
-            <SessionProviderWrapper>
-              <AppShell user={{ name: session.user?.name, email: session.user?.email, isAdmin: !!session.user?.isAdmin }}>
-                {children}
-              </AppShell>
-            </SessionProviderWrapper>
+            <AppShell user={{ name: session.user?.name, email: session.user?.email, isAdmin: !!session.user?.isAdmin }}>
+              {children}
+            </AppShell>
           )
         }
       </body>
