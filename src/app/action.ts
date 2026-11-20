@@ -1,110 +1,14 @@
-"use server";
-import { cache } from "react";
 import { revalidateTag, unstable_cache } from "next/cache";
-import "@/app/lib/neon-local";
-import { neon } from "@neondatabase/serverless";
-import { containsPattern } from "@/app/lib/like";
+import { getBooks } from "../../db/books";
 import { Book } from "@/types/Book";
 
-// Cached version of loadBooks with React cache for request deduplication
-export const loadBooks = cache(async (): Promise<Book[]> => {
-    const sql = neon(`${process.env.DATABASE_URL}`);
-    const rows = await sql`
-        SELECT *,
-            CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END AS rating_average
-        FROM books ORDER BY id ASC LIMIT 20`;
-
-    return rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        authors: row.authors,
-        isbn10: row.isbn10,
-        isbn13: row.isbn13,
-        count: row.count,
-        borrowedCount: row.borrowed_count,
-        ratingCount: row.rating_count,
-        ratingAverage: row.rating_average,
-    }));
-});
-
-// Cached version for search queries with Next.js unstable_cache for persistence
+/**
+ * A page of the catalogue, from the data cache. Writes that change what the catalogue shows
+ * (borrow, return, add book, rating) call invalidateBooksCache.
+ */
 export const loadBooksWithSearch = unstable_cache(
-    async (searchQuery: string, lastSeenId?: string, size: number = 20): Promise<Book[]> => {
-        const sql = neon(`${process.env.DATABASE_URL}`);
-        
-        let query;
-        if (lastSeenId) {
-            query = searchQuery.trim()
-                ? sql`
-                    SELECT 
-                        id,
-                        title,
-                        authors,
-                        isbn10,
-                        isbn13,
-                        count,
-                        borrowed_count as "borrowedCount",
-                        rating_count as "ratingCount",
-                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
-                    FROM books 
-                    WHERE id > ${parseInt(lastSeenId)} AND title ILIKE ${containsPattern(searchQuery)}
-                    ORDER BY id 
-                    LIMIT ${size}
-                `
-                : sql`
-                    SELECT 
-                        id,
-                        title,
-                        authors,
-                        isbn10,
-                        isbn13,
-                        count,
-                        borrowed_count as "borrowedCount",
-                        rating_count as "ratingCount",
-                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
-                    FROM books 
-                    WHERE id > ${parseInt(lastSeenId)}
-                    ORDER BY id 
-                    LIMIT ${size}
-                `;
-        } else {
-            query = searchQuery.trim()
-                ? sql`
-                    SELECT 
-                        id,
-                        title,
-                        authors,
-                        isbn10,
-                        isbn13,
-                        count,
-                        borrowed_count as "borrowedCount",
-                        rating_count as "ratingCount",
-                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
-                    FROM books 
-                    WHERE title ILIKE ${containsPattern(searchQuery)}
-                    ORDER BY id 
-                    LIMIT ${size}
-                `
-                : sql`
-                    SELECT 
-                        id,
-                        title,
-                        authors,
-                        isbn10,
-                        isbn13,
-                        count,
-                        borrowed_count as "borrowedCount",
-                        rating_count as "ratingCount",
-                        CASE WHEN rating_count = 0 THEN NULL ELSE ROUND(rating_sum::numeric / rating_count, 1)::float8 END as "ratingAverage"
-                    FROM books 
-                    ORDER BY id 
-                    LIMIT ${size}
-                `;
-        }
-        
-        const rows = await query;
-        return rows as Book[];
-    },
+    async (searchQuery: string, lastSeenId?: string, size: number = 20): Promise<Book[]> =>
+        getBooks(searchQuery, size, lastSeenId),
     ['books-search'],
     {
         tags: ['books'],
@@ -112,7 +16,8 @@ export const loadBooksWithSearch = unstable_cache(
     }
 );
 
-// Cache invalidation function for book operations
+// Expires the cached catalogue straight away, so the next read shows the new counts.
+// ('max' would serve the old counts once more while refreshing in the background.)
 export const invalidateBooksCache = async () => {
-    revalidateTag('books', 'max');
+    revalidateTag('books', { expire: 0 });
 };

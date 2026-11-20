@@ -7,7 +7,7 @@ vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn, revalidateTa
 import { saveRating, deleteRating } from "../ratings";
 import { getBooks } from "../books";
 import { getReturnedBooks, returnBook, borrowBook } from "../borrowedBooks";
-import { loadBooks } from "../../src/app/action";
+import { loadBooksWithSearch } from "../../src/app/action";
 
 /** A reader who has borrowed and returned a copy of a new book. */
 const returnedReader = async (o: { copies?: number } = {}) => {
@@ -184,13 +184,13 @@ describe("stored totals (sync_book_rating_totals trigger)", () => {
     it("an unrated book has a count of 0 and no average", async () => {
         await insertBook();
         expect((await getBooks("", 20))[0]).toMatchObject({ ratingCount: 0, ratingAverage: null });
-        expect((await loadBooks())[0]).toMatchObject({ ratingCount: 0, ratingAverage: null });
+        expect((await loadBooksWithSearch(""))[0]).toMatchObject({ ratingCount: 0, ratingAverage: null });
     });
 
-    it("loadBooks (first page, server side) carries the same average", async () => {
+    it("loadBooksWithSearch (first page, server side) carries the same average", async () => {
         const b = await insertBook({ copies: 2 });
         await readers(b.id, b.copyIds, [3, 4]);
-        expect((await loadBooks())[0]).toMatchObject({ ratingCount: 2, ratingAverage: 3.5 });
+        expect((await loadBooksWithSearch(""))[0]).toMatchObject({ ratingCount: 2, ratingAverage: 3.5 });
     });
 
     it("keeps each book's totals separate", async () => {

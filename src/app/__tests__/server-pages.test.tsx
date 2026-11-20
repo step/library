@@ -3,11 +3,11 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const m = vi.hoisted(() => ({
-    loadBooks: vi.fn(), loadReadingBooks: vi.fn(), loadReturnedBooks: vi.fn(),
+    loadBooksWithSearch: vi.fn(), loadReadingBooks: vi.fn(), loadReturnedBooks: vi.fn(),
     getLoggedInUser: vi.fn(), getBorrowedBooks: vi.fn(), getReturnedBooks: vi.fn(), getAllBorrowedBooks: vi.fn(),
 }));
 vi.mock("next/font/google", () => ({ Lexend: () => ({ className: "lx", variable: "--font-lexend" }) }));
-vi.mock("../action", () => ({ loadBooks: m.loadBooks }));
+vi.mock("../action", () => ({ loadBooksWithSearch: m.loadBooksWithSearch }));
 vi.mock("../reading/action", () => ({ loadReadingBooks: m.loadReadingBooks }));
 vi.mock("../history/action", () => ({ loadReturnedBooks: m.loadReturnedBooks }));
 vi.mock("../manage/borrowed-books/action", () => ({ getAllBorrowedBooks: m.getAllBorrowedBooks }));
@@ -34,8 +34,9 @@ beforeEach(() => vi.clearAllMocks());
 
 describe("server pages hand the loaded data to their component", () => {
     it("Home: the first page of books", async () => {
-        m.loadBooks.mockResolvedValue([{ id: 1 }]);
+        m.loadBooksWithSearch.mockResolvedValue([{ id: 1 }]);
         const el = (await Home()) as El;
+        expect(m.loadBooksWithSearch).toHaveBeenCalledWith("");
         expect((el.type as { name: string }).name).toBe("Books");
         expect(el.props.books).toEqual([{ id: 1 }]);
     });
@@ -71,7 +72,7 @@ describe("server pages hand the loaded data to their component", () => {
         await expect(BorrowedBooksPage()).rejects.toThrow("Access denied");
     });
     it("a failing loader fails the page instead of showing an empty list", async () => {
-        m.loadBooks.mockRejectedValue(new Error("db down"));
+        m.loadBooksWithSearch.mockRejectedValue(new Error("db down"));
         await expect(Home()).rejects.toThrow("db down");
     });
 });

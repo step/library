@@ -97,7 +97,7 @@ describe("forceReturnBook", () => {
         signedInAs("boss@x.com");
         await forceReturnBook(loan);
         expect(cache.revalidatePath).toHaveBeenCalledWith("/manage/borrowed-books");
-        expect(cache.revalidateTag).toHaveBeenCalledWith("books", "max");
+        expect(cache.revalidateTag).toHaveBeenCalledWith("books", { expire: 0 });
     });
 
     it("reports failure for a loan that does not exist, and refreshes nothing", async () => {

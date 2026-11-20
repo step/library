@@ -8,7 +8,7 @@ vi.mock("next/cache", () => ({
 }));
 
 import { getBooks, onboardBook } from "../books";
-import { loadBooks, loadBooksWithSearch } from "../../src/app/action";
+import { loadBooksWithSearch } from "../../src/app/action";
 
 const titles = (books: { title: string }[]) => books.map(b => b.title);
 
@@ -146,10 +146,10 @@ describe("getBooks: cursor pagination", () => {
     });
 });
 
-describe("loadBooks and loadBooksWithSearch (server-side data for the pages)", () => {
-    it("loadBooks returns the first 20 by id with camelCase fields", async () => {
+describe("loadBooksWithSearch (server-side data for the pages)", () => {
+    it("the home page's first page: 20 by id with camelCase fields", async () => {
         await seed(Array.from({ length: 25 }, (_, i) => `B${i}`));
-        const books = await loadBooks();
+        const books = await loadBooksWithSearch("");
         expect(books).toHaveLength(20);
         expect(Object.keys(books[0]).sort()).toEqual(["authors", "borrowedCount", "count", "id", "isbn10", "isbn13", "ratingAverage", "ratingCount", "title"]);
     });
