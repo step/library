@@ -1,4 +1,4 @@
-import { Scanner } from '@yudiel/react-qr-scanner';
+import { Scanner, type IScannerError } from '@yudiel/react-qr-scanner';
 import IconButton from './IconButton';
 import ArrowBack from './icons/ArrowBack';
 import "../styles/BarcodeScanner.css";
@@ -21,7 +21,7 @@ const ScannerControls = (props: { onCancel: () => void }) => {
 
 type BarcodeScannerProps = {
     onResult: (result: string) => void;
-    onError: (error: Error) => void;
+    onError: (error: IScannerError) => void;
     opened: boolean;
     onCancel: () => void;
 };
@@ -39,7 +39,7 @@ const BarcodeScanner = (props: BarcodeScannerProps) => {
                         const value = results[0]?.rawValue;
                         if (value) onResult(value);
                     }}
-                    onError={e => onError(e as Error)}
+                    onError={onError}
                     formats={['ean_13', 'qr_code']}
                 />
             </div>

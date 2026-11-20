@@ -60,7 +60,7 @@ describe("BarcodeScanner", () => {
 
     it("forwards camera errors", () => {
         const { onError } = setup();
-        const err = new Error("NotAllowedError");
+        const err = { kind: "permission-denied", message: "Camera access was denied", cause: new Error("NotAllowedError") };
         lib.props!.onError(err);
         expect(onError).toHaveBeenCalledWith(err);
     });
