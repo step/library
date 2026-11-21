@@ -1,0 +1,20 @@
+/* Walkthrough video. Tokens: Tech Blue #22567C, EE Blue #1795D4, Dark Data #212526, Slate neutrals. */
+.tv-link { align-self: center; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: #22567C; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+.tv-link:hover { background: #F1F5F9; text-decoration: underline; }
+.tv-link:focus-visible, .tv-dialog :focus-visible { outline: 2px solid #1795D4; outline-offset: 2px; }
+.tv-outline { gap: 8px; }
+
+.tv-modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 130; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(33, 37, 38, .75); font-family: var(--font-lexend), system-ui, sans-serif; color: #212526; }
+.tv-dialog { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: 12px; padding: 12px 12px 16px; background: #fff; box-shadow: 0 24px 48px rgba(0, 0, 0, .3); }
+.tv-dialog:focus { outline: none; }
+.tv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 4px; }
+.tv-title { margin: 0; font-size: 18px; line-height: 26px; font-weight: 600; letter-spacing: -.01em; }
+.tv-x { width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #475569; cursor: pointer; }
+.tv-x:hover { background: #F1F5F9; }
+.tv-video { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100vh - 160px); background: #0F1A22; }
+.tv-note { margin: 0; padding-left: 4px; font-size: 14px; line-height: 20px; color: #475569; }
+
+@media (min-width: 768px) {
+  .tv-modal { padding: 24px; }
+  .tv-dialog { padding: 16px 16px 20px; }
+}

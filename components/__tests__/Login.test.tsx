@@ -44,6 +44,11 @@ describe("Login", () => {
         expect(illustrations).toHaveLength(2);
     });
 
+    it("offers the walkthrough video before signing in", () => {
+        render(<Login />);
+        expect(screen.getByRole("button", { name: "Watch a 1-minute tour" })).toBeInTheDocument();
+    });
+
     it("applies the font class to the page", () => {
         const { container } = render(<Login />);
         expect(container.firstChild).toHaveClass("lb-signin", "mock-lexend");
@@ -78,9 +83,13 @@ describe("Login", () => {
         expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     });
 
-    it("has exactly one button, so there is a single way to sign in", () => {
+    it("has a single way to sign in: the only other button plays the tour", async () => {
+        const user = userEvent.setup();
         render(<Login />);
-        expect(screen.getAllByRole("button")).toHaveLength(1);
+        const buttons = screen.getAllByRole("button");
+        expect(buttons.map(b => b.textContent)).toEqual(["Continue with Google", "Watch a 1-minute tour"]);
+        await user.click(buttons[1]);
+        expect(signInMock).not.toHaveBeenCalled();
     });
 });
 

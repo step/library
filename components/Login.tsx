@@ -2,6 +2,7 @@
 import { signIn } from "next-auth/react";
 import { Lexend } from "next/font/google";
 import "../styles/Login.css";
+import TourVideo from "./TourVideo";
 
 const lexend = Lexend({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
@@ -135,6 +136,7 @@ const Login = () => {
                         <span>Continue with Google</span>
                     </button>
                     <p className="lb-fine">We only use your Google account to identify you in the library.</p>
+                    <TourVideo />
                 </div>
             </section>
         </div>

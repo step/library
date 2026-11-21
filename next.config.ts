@@ -9,6 +9,9 @@ const nextConfig = {
     dest: "public",
     register: true,
     skipWaiting: true,
+    // next-pwa precaches everything in public/. Keep the 5 MB walkthrough video out of that, so it
+    // downloads only when someone plays it. No runtimeCaching rule matches it either.
+    publicExcludes: ['!onboarding/**/*'],
     disable: process.env.NODE_ENV === "development",
     // Offline fallback configuration
     fallbacks: {

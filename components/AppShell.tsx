@@ -6,6 +6,7 @@ import { BookOpenText, History, Library, LogOut, Users } from "lucide-react";
 import { lexend } from "../src/app/lib/fonts";
 import BorrowBook from "../src/app/BorrowBook";
 import ReturnBook from "../src/app/reading/ReturnBook";
+import TourVideo from "./TourVideo";
 import "../styles/AppShell.css";
 
 type ShellUser = {
@@ -74,6 +75,7 @@ const AppShell = ({ user, children }: { user: ShellUser; children: React.ReactNo
                             <span className="sh-user-mail">{user.email}</span>
                         </span>
                     </div>
+                    <TourVideo label="How it works" className="sh-signout" />
                     <button className="sh-signout" onClick={() => signOut()}>
                         <LogOut size={18} aria-hidden="true" />
                         <span>Sign out</span>
@@ -87,9 +89,12 @@ const AppShell = ({ user, children }: { user: ShellUser; children: React.ReactNo
                         <BrandMark />
                         <span>Library</span>
                     </div>
-                    <button className="sh-avatar-btn" aria-label="Sign out" onClick={() => signOut()}>
-                        <span className="sh-avatar" aria-hidden="true">{initials(user)}</span>
-                    </button>
+                    <div className="sh-top-act">
+                        <TourVideo label="How it works" className="sh-help-btn" />
+                        <button className="sh-avatar-btn" aria-label="Sign out" onClick={() => signOut()}>
+                            <span className="sh-avatar" aria-hidden="true">{initials(user)}</span>
+                        </button>
+                    </div>
                 </header>
                 <main className="sh-content">{children}</main>
             </div>

@@ -30,6 +30,9 @@
 /* Mobile top bar and tab bar */
 .sh-top { position: sticky; top: 0; z-index: 10; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; background: #fff; border-bottom: 1px solid #E2E8F0; }
 .sh-top .sh-brand { font-size: 17px; }
+.sh-top-act { display: flex; align-items: center; gap: 4px; }
+.sh-help-btn { height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 10px; border: 1px solid #CBD5E1; border-radius: 20px; background: #fff; color: #22567C; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.sh-help-btn:hover { background: #F1F5F9; }
 .sh-avatar-btn { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0; }
 .sh-avatar-btn .sh-avatar { background: #22567C; color: #fff; }
 .sh-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; height: 64px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: #fff; border-top: 1px solid #E2E8F0; padding-bottom: env(safe-area-inset-bottom, 0); }

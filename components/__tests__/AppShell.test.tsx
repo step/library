@@ -138,4 +138,23 @@ describe("AppShell user area", () => {
         for (const b of buttons) await userEvent.click(b);
         expect(auth.signOut).toHaveBeenCalledTimes(2);
     });
+
+    it.each(["/", "/reading", "/history", "/manage"])("offers the walkthrough video on %s, in the top bar and the sidebar", (path) => {
+        renderAt(path, admin);
+        const buttons = screen.getAllByRole("button", { name: "How it works" });
+        expect(buttons).toHaveLength(2);
+        // A visible label, not a bare icon: people did not read "?" as "watch a video".
+        for (const b of buttons) expect(b).toHaveTextContent("How it works");
+    });
+
+    it("each walkthrough button opens the video without signing out", async () => {
+        renderAt("/");
+        auth.signOut.mockClear();
+        for (const b of screen.getAllByRole("button", { name: "How it works" })) {
+            await userEvent.click(b);
+            expect(screen.getByRole("dialog", { name: "How the library works" })).toBeInTheDocument();
+            await userEvent.click(screen.getByRole("button", { name: "Close" }));
+        }
+        expect(auth.signOut).not.toHaveBeenCalled();
+    });
 });

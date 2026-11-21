@@ -4,6 +4,7 @@ import "../styles/Books.css";
 import { BorrowedBook } from '../types/BorrowedBook';
 import { formatShortDate, formatTimeSince } from '../utils/dateUtils';
 import { lexend } from '../src/app/lib/fonts';
+import TourVideo from './TourVideo';
 
 const ReadingBookRow = ({ book }: { book: BorrowedBook }) => (
     <li className="bk-row bk-cols-reading">
@@ -39,6 +40,7 @@ const ReadingBooks = (props: { books?: BorrowedBook[] }) => {
                 <div className="bk-empty">
                     <p className="bk-empty-t">No books currently borrowed</p>
                     <p className="bk-empty-s">Scan a book&apos;s QR code on the Books page to borrow it.</p>
+                    <TourVideo label="Watch how it works" className="bk-btn-outline tv-outline" />
                 </div>
             ) : (
                 <>

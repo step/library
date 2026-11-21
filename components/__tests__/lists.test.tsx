@@ -105,6 +105,13 @@ describe("ReadingBooks", () => {
         expect(screen.queryByRole("list")).not.toBeInTheDocument();
     });
 
+    it("offers the walkthrough video only when nothing is borrowed", () => {
+        const { rerender } = render(<ReadingBooks books={[]} />);
+        expect(screen.getByRole("button", { name: "Watch how it works" })).toBeInTheDocument();
+        rerender(<ReadingBooks books={[borrowed(1, "A", 1)]} />);
+        expect(screen.queryByRole("button", { name: "Watch how it works" })).not.toBeInTheDocument();
+    });
+
     it("lists each book with its date and how long ago", () => {
         render(<ReadingBooks books={[borrowed(1, "Dune", 3), borrowed(2, "Emma", 45)]} />);
         const rows = screen.getAllByRole("listitem");
