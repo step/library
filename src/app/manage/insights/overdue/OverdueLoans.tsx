@@ -63,40 +63,44 @@ const OverdueLoans = ({ loans }: { loans: OverdueLoan[] }) => {
             </div>
 
             <section className="in-card in-card-flush" aria-label="Overdue loans">
-                <div className="in-scroll">
-                    <table className="in-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Reader</th>
-                                <th scope="col">Book</th>
-                                <th scope="col">Borrowed on</th>
-                                <th scope="col" className="in-num">Out for</th>
-                                <th scope="col">Status</th>
+                {/* A table on wider screens; on phones each row is restyled as a card (Insights.css).
+                    The explicit roles keep it announced as a table once CSS changes its display. */}
+                <table className="in-table in-table-stack" role="table">
+                    <thead role="rowgroup">
+                        <tr role="row">
+                            <th scope="col" role="columnheader">Reader</th>
+                            <th scope="col" role="columnheader">Book</th>
+                            <th scope="col" role="columnheader">Borrowed on</th>
+                            <th scope="col" role="columnheader" className="in-num">Out for</th>
+                            <th scope="col" role="columnheader">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody role="rowgroup">
+                        {loans.map(l => (
+                            <tr key={l.id} role="row">
+                                <th scope="row" role="rowheader" className="in-c-reader">
+                                    <span className="in-cell-t">{l.readerName}</span>
+                                    <span className="in-desc in-email">{l.readerEmail} · Batch {l.batchId}</span>
+                                </th>
+                                <td role="cell" className="in-c-book">
+                                    <span className="in-cell-t">{l.title}</span>
+                                    <span className="in-desc">{l.authors}</span>
+                                </td>
+                                <td role="cell" className="in-c-date in-nowrap">
+                                    <span className="in-mlabel" aria-hidden="true">Borrowed </span>{formatShortDate(l.borrowedDate)}
+                                </td>
+                                <td role="cell" className="in-c-days in-num in-nowrap">
+                                    {l.daysOut} days<span className="in-mlabel" aria-hidden="true"> out</span>
+                                </td>
+                                <td role="cell" className="in-c-status">
+                                    {l.daysOut >= VERY_OVERDUE_DAYS
+                                        ? <span className="in-badge in-badge-err">Very overdue</span>
+                                        : <span className="in-badge in-badge-warn">Overdue</span>}
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {loans.map(l => (
-                                <tr key={l.id}>
-                                    <th scope="row">
-                                        <span className="in-cell-t">{l.readerName}</span>
-                                        <span className="in-desc">{l.readerEmail} · Batch {l.batchId}</span>
-                                    </th>
-                                    <td>
-                                        <span className="in-cell-t">{l.title}</span>
-                                        <span className="in-desc">{l.authors}</span>
-                                    </td>
-                                    <td className="in-nowrap">{formatShortDate(l.borrowedDate)}</td>
-                                    <td className="in-num in-nowrap">{l.daysOut} days</td>
-                                    <td>
-                                        {l.daysOut >= VERY_OVERDUE_DAYS
-                                            ? <span className="in-badge in-badge-err">Very overdue</span>
-                                            : <span className="in-badge in-badge-warn">Overdue</span>}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </section>
         </>
     );

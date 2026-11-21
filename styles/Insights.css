@@ -120,6 +120,28 @@
 
 /* Overdue page */
 .in-kpis-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.in-mlabel { display: none; }
+
+/* Phones: each overdue loan is a card, not a row of a table too wide to read. */
+@media (max-width: 767px) {
+  .in-table-stack { min-width: 0; display: block; }
+  .in-table-stack thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .in-table-stack tbody { display: block; }
+  .in-table-stack tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "reader status" "book book" "date days";
+    gap: 8px 12px; padding: 14px 16px; border-bottom: 1px solid #E2E8F0;
+  }
+  .in-table-stack tbody tr:last-child { border-bottom: 0; }
+  .in-table-stack tbody th, .in-table-stack td { display: block; padding: 0; border: 0; }
+  .in-table-stack .in-c-reader { grid-area: reader; min-width: 0; }
+  .in-table-stack .in-c-status { grid-area: status; align-self: start; }
+  .in-table-stack .in-c-book { grid-area: book; }
+  .in-table-stack .in-c-date { grid-area: date; font-size: 13px; color: #475569; }
+  .in-table-stack .in-c-days { grid-area: days; font-size: 13px; font-weight: 600; }
+  .in-table-stack .in-email { overflow-wrap: anywhere; }
+  .in-table-stack .in-mlabel { display: inline; }
+}
 .in-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .in-actions .mg-btn { height: 48px; }
 

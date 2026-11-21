@@ -165,6 +165,18 @@ describe("OverdueLoans", () => {
         expect(screen.getByRole("status")).toHaveTextContent("Could not copy");
     });
 
+    it("stays a table for screen readers when phones show it as cards, without repeating the labels", () => {
+        render(<OverdueLoans loans={LOANS} />);
+        const table = screen.getByRole("table");
+        expect(within(table).getAllByRole("columnheader").map(h => h.textContent))
+            .toEqual(["Reader", "Book", "Borrowed on", "Out for", "Status"]);
+        const first = within(table).getAllByRole("row")[1];
+        expect(within(first).getByRole("rowheader")).toHaveTextContent("Riya");
+        const phoneLabels = first.querySelectorAll(".in-mlabel");
+        expect([...phoneLabels].map(l => l.textContent)).toEqual(["Borrowed ", " out"]);
+        for (const l of phoneLabels) expect(l).toHaveAttribute("aria-hidden", "true");
+    });
+
     it("says when nothing is overdue", () => {
         render(<OverdueLoans loans={[]} />);
         expect(screen.getByText("No overdue loans")).toBeInTheDocument();
