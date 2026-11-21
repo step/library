@@ -19,6 +19,7 @@ const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
         searchQuery,
         isSearching,
         loadingMore,
+        hasMore,
         setSearchQuery,
         performSearch,
         loadMore
@@ -32,10 +33,10 @@ const Books: React.FC<BooksProps> = ({ books: initialBooks }) => {
     }, [performSearch, searchQuery]);
 
     const handleEndReached = useCallback(async () => {
-        if (books.length > 0) {
+        if (hasMore && books.length > 0) {
             await loadMore(searchQuery, books[books.length - 1].id);
         }
-    }, [loadMore, searchQuery, books]);
+    }, [hasMore, loadMore, searchQuery, books]);
 
     const clearSearch = useCallback(() => setSearchQuery(''), [setSearchQuery]);
     const noResults = !isSearching && books.length === 0;

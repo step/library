@@ -3,6 +3,12 @@ import { loadBooksAfter } from '@/app/BooksApi';
 import { Book } from '../types/Book';
 import { useDebounce } from './useDebounce';
 
+/** Books per request. A shorter page means there are no more books to load. */
+const PAGE_SIZE = 20;
+const isFullPage = (page: Book[]) => page.length === PAGE_SIZE;
+
+type CacheEntry = { books: Book[]; hasMore: boolean };
+
 interface UseBookSearchOptions {
     initialBooks: Book[];
     debounceDelay?: number;
@@ -13,6 +19,8 @@ interface UseBookSearchResult {
     searchQuery: string;
     isSearching: boolean;
     loadingMore: boolean;
+    /** False once a page came back short: scrolling to the end should not ask for more. */
+    hasMore: boolean;
     setSearchQuery: (query: string) => void;
     performSearch: (query: string, useCache?: boolean) => Promise<void>;
     loadMore: (query: string, lastSeenBookId: number) => Promise<void>;
@@ -29,8 +37,11 @@ export const useBookSearch = ({
     const [searchQuery, setSearchQuery] = useState("");
     const [loadingMore, setLoadingMore] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [hasMore, setHasMore] = useState(isFullPage(initialBooks));
     // Not state: it is never rendered, and changing it must not re-run the search effect.
-    const searchCache = useRef<Map<string, Book[]>>(new Map([['', initialBooks]]));
+    const searchCache = useRef<Map<string, CacheEntry>>(
+        new Map([['', { books: initialBooks, hasMore: isFullPage(initialBooks) }]])
+    );
     // Id of the newest search. Older responses that arrive late must not overwrite newer results.
     const latestSearch = useRef(0);
     
@@ -39,18 +50,24 @@ export const useBookSearch = ({
     const performSearch = useCallback(async (query: string, useCache: boolean = true) => {
         const searchId = ++latestSearch.current;
 
-        if (useCache && searchCache.current.has(query)) {
-            setBooks(searchCache.current.get(query) || []);
+        const cached = useCache ? searchCache.current.get(query) : undefined;
+        if (cached) {
+            setBooks(cached.books);
+            setHasMore(cached.hasMore);
             setIsSearching(false);
             return;
         }
 
         setIsSearching(true);
         try {
-            const { success, data } = await loadBooksAfter(query, 0, 20);
+            const { success, data } = await loadBooksAfter(query, 0, PAGE_SIZE);
             if (success && Array.isArray(data)) {
-                searchCache.current.set(query, data);
-                if (searchId === latestSearch.current) setBooks(data);
+                const entry = { books: data, hasMore: isFullPage(data) };
+                searchCache.current.set(query, entry);
+                if (searchId === latestSearch.current) {
+                    setBooks(entry.books);
+                    setHasMore(entry.hasMore);
+                }
             }
         } catch {
             // Keep showing the previous results.
@@ -64,14 +81,16 @@ export const useBookSearch = ({
         
         setLoadingMore(true);
         try {
-            const { success, data } = await loadBooksAfter(searchQuery, lastSeenBookId, 20);
-            if (success && data.length > 0) {
-                setBooks(prevBooks => [...prevBooks, ...data]);
-                
+            const { success, data } = await loadBooksAfter(searchQuery, lastSeenBookId, PAGE_SIZE);
+            if (success && Array.isArray(data)) {
+                const more = isFullPage(data);
+                setHasMore(more);
+                if (data.length > 0) setBooks(prevBooks => [...prevBooks, ...data]);
+
                 // Update cache for current search query
-                if (searchQuery && searchCache.current.has(searchQuery)) {
-                    const existing = searchCache.current.get(searchQuery) || [];
-                    searchCache.current.set(searchQuery, [...existing, ...data]);
+                const existing = searchQuery ? searchCache.current.get(searchQuery) : undefined;
+                if (existing) {
+                    searchCache.current.set(searchQuery, { books: [...existing.books, ...data], hasMore: more });
                 }
             }
         } catch (error) {
@@ -93,6 +112,7 @@ export const useBookSearch = ({
         searchQuery,
         isSearching,
         loadingMore,
+        hasMore,
         setSearchQuery,
         performSearch,
         loadMore

@@ -227,6 +227,54 @@ describe("responses that claim success but cannot be trusted", () => {
     });
 });
 
+describe("hasMore", () => {
+    const fullPage = (from: number) => Array.from({ length: 20 }, (_, i) => book(from + i));
+
+    it("is false when the first page is short, true when it is full", () => {
+        expect(setup().result.current.hasMore).toBe(false);
+        const { result } = renderHook(() => useBookSearch({ initialBooks: fullPage(1) }));
+        expect(result.current.hasMore).toBe(true);
+    });
+
+    it("turns false when a further page comes back short, and stays true after a full one", async () => {
+        const { result } = renderHook(() => useBookSearch({ initialBooks: fullPage(1) }));
+        api.loadBooksAfter.mockResolvedValueOnce(ok(fullPage(21)));
+        await act(async () => { await result.current.loadMore("", 20); });
+        expect(result.current.hasMore).toBe(true);
+        api.loadBooksAfter.mockResolvedValueOnce(ok([]));
+        await act(async () => { await result.current.loadMore("", 40); });
+        expect(result.current.hasMore).toBe(false);
+        expect(result.current.books).toHaveLength(40);
+    });
+
+    it("is unchanged when loading more fails", async () => {
+        const { result } = renderHook(() => useBookSearch({ initialBooks: fullPage(1) }));
+        api.loadBooksAfter.mockResolvedValueOnce({ success: false, data: { message: "down" } });
+        await act(async () => { await result.current.loadMore("", 20); });
+        expect(result.current.hasMore).toBe(true);
+    });
+
+    it("follows each search, and a cached search remembers where its list ended", async () => {
+        const { result } = setup();
+        api.loadBooksAfter.mockResolvedValueOnce(ok(fullPage(100)));
+        await type(result, "full"); await wait(300);
+        expect(result.current.hasMore).toBe(true);
+        api.loadBooksAfter.mockResolvedValueOnce(ok([]));
+        await act(async () => { await result.current.loadMore("full", 119); });
+        expect(result.current.hasMore).toBe(false);
+
+        api.loadBooksAfter.mockResolvedValueOnce(ok(fullPage(200)));
+        await type(result, "other"); await wait(300);
+        expect(result.current.hasMore).toBe(true);
+
+        await type(result, "full"); await wait(300);
+        expect(result.current.hasMore).toBe(false);
+        await type(result, ""); await wait(300);
+        expect(result.current.hasMore).toBe(false);
+        expect(api.loadBooksAfter).toHaveBeenCalledTimes(3);
+    });
+});
+
 describe("returning to the empty search", () => {
     it("shows only the first page again, even after more pages were loaded before", async () => {
         const { result } = setup();

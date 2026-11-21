@@ -29,6 +29,8 @@ import Searchbar from "../Searchbar";
 
 const book = (id: number, title = `Book ${id}`, over: Partial<Book> = {}): Book => ({ id, title, authors: "Auth", isbn10: "", isbn13: "", count: 2, borrowedCount: 0, ratingCount: 0, ratingAverage: null, ...over });
 const ok = (data: Book[]) => ({ success: true, data });
+/** A full page of 20 books from `from` up: the list may have more after it. */
+const page = (from: number) => Array.from({ length: 20 }, (_, i) => book(from + i));
 const deferred = <T,>() => { let resolve!: (v: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; };
 
 beforeEach(() => {
@@ -178,38 +180,64 @@ describe("Books page", () => {
     });
 
     it("loads the next page after the last book when the end of the list is reached", async () => {
-        api.loadBooksAfter.mockResolvedValue(ok([book(3, "Third")]));
-        render(<Books books={[book(1), book(2)]} />);
+        api.loadBooksAfter.mockResolvedValue(ok([book(21, "Twenty-first")]));
+        render(<Books books={page(1)} />);
         await user().click(screen.getByRole("button", { name: "end reached" }));
-        expect(api.loadBooksAfter).toHaveBeenCalledWith("", 2, 20);
-        expect(await screen.findByText("Third")).toBeInTheDocument();
+        expect(api.loadBooksAfter).toHaveBeenCalledWith("", 20, 20);
+        expect(await screen.findByText("Twenty-first")).toBeInTheDocument();
     });
 
     it("loads more within the current search", async () => {
-        api.loadBooksAfter.mockResolvedValueOnce(ok([book(5, "Dune")]));
+        api.loadBooksAfter.mockResolvedValueOnce(ok(page(5)));
         render(<Books books={[book(1)]} />);
         const u = user();
         await u.type(box(), "dune");
         await settle();
-        api.loadBooksAfter.mockResolvedValueOnce(ok([book(7, "Dune 2")]));
+        api.loadBooksAfter.mockResolvedValueOnce(ok([book(30, "Dune 2")]));
         await u.click(screen.getByRole("button", { name: "end reached" }));
-        expect(api.loadBooksAfter).toHaveBeenLastCalledWith("dune", 5, 20);
+        expect(api.loadBooksAfter).toHaveBeenLastCalledWith("dune", 24, 20);
+    });
+
+    it("does not ask for more when the first page is short (everything is already shown)", async () => {
+        render(<Books books={[book(1), book(2)]} />);
+        await user().click(screen.getByRole("button", { name: "end reached" }));
+        expect(api.loadBooksAfter).not.toHaveBeenCalled();
+    });
+
+    it("stops asking for more once a page comes back short", async () => {
+        api.loadBooksAfter.mockResolvedValueOnce(ok([book(21)]));
+        render(<Books books={page(1)} />);
+        const u = user();
+        await u.click(screen.getByRole("button", { name: "end reached" }));
+        expect(await screen.findByText("Book 21")).toBeInTheDocument();
+        await u.click(screen.getByRole("button", { name: "end reached" }));
+        expect(api.loadBooksAfter).toHaveBeenCalledTimes(1);
+    });
+
+    it("a short search result does not ask for more", async () => {
+        api.loadBooksAfter.mockResolvedValueOnce(ok([book(5, "Dune")]));
+        render(<Books books={page(1)} />);
+        const u = user();
+        await u.type(box(), "dune");
+        await settle();
+        await u.click(screen.getByRole("button", { name: "end reached" }));
+        expect(api.loadBooksAfter).toHaveBeenCalledTimes(1);
     });
 
     it("shows 'Loading more...' only while a page is loading", async () => {
         const d = deferred<ReturnType<typeof ok>>();
         api.loadBooksAfter.mockReturnValue(d.promise);
-        render(<Books books={[book(1)]} />);
+        render(<Books books={page(1)} />);
         await user().click(screen.getByRole("button", { name: "end reached" }));
         expect(screen.getByText("Loading more...")).toBeInTheDocument();
-        await act(async () => { d.resolve(ok([book(2)])); });
+        await act(async () => { d.resolve(ok([book(21)])); });
         expect(screen.queryByText("Loading more...")).not.toBeInTheDocument();
     });
 
     it("does not start a second page request while one is loading", async () => {
         const d = deferred<ReturnType<typeof ok>>();
         api.loadBooksAfter.mockReturnValue(d.promise);
-        render(<Books books={[book(1)]} />);
+        render(<Books books={page(1)} />);
         const u = user();
         await u.click(screen.getByRole("button", { name: "end reached" }));
         await u.click(screen.getByRole("button", { name: "end reached" }));
