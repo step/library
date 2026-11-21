@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookPlus, ChevronRight, ClipboardList, QrCode, Users } from "lucide-react";
+import { BookPlus, ChartColumn, ChevronRight, ClipboardList, QrCode, Users } from "lucide-react";
 
 const TOOLS = [
     {
@@ -25,6 +25,12 @@ const TOOLS = [
         title: "Manage users",
         description: "Add people, import them from a CSV and set who is an admin.",
         icon: <Users size={24} aria-hidden="true" />,
+    },
+    {
+        href: "/manage/insights",
+        title: "Insights",
+        description: "See how the library is used: overdue loans, top readers, idle books and more.",
+        icon: <ChartColumn size={24} aria-hidden="true" />,
     },
 ];
 

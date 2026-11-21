@@ -10,7 +10,7 @@ import BooksOfflinePage from "../books-offline/page";
 import ManageOfflinePage from "../manage-offline/page";
 
 describe("Manage hub", () => {
-    it("lists the four admin tools with the right destinations", () => {
+    it("lists the five admin tools with the right destinations", () => {
         render(<ManagePage />);
         expect(screen.getByRole("heading", { level: 1, name: "Manage" })).toBeInTheDocument();
         const links = screen.getAllByRole("link").map(a => [within(a).getByText(/./, { selector: ".mg-hub-t" }).textContent, a.getAttribute("href")]);
@@ -19,6 +19,7 @@ describe("Manage hub", () => {
             ["Generate book QR codes", "/manage/generate-qr-code"],
             ["View borrowed books", "/manage/borrowed-books"],
             ["Manage users", "/manage/users"],
+            ["Insights", "/manage/insights"],
         ]);
     });
     it("describes each tool", () => {
