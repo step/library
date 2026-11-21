@@ -71,25 +71,26 @@ export const addLibraryUser = async (name: string, email: string, isAdmin: boole
 }
 
 export const bulkAddLibraryUsers = async (users: { name: string; email: string; isAdmin: boolean; batchId: number }[]): Promise<{ added: number; skipped: number; users: User[] }> => {
+    if (users.length === 0) return { added: 0, skipped: 0, users: [] };
     const sql = neon(`${process.env.DATABASE_URL}`);
-    let added = 0;
-    let skipped = 0;
-    const inserted: User[] = [];
-    for (const user of users) {
-        const existing = await sql`SELECT id FROM library_users WHERE email = ${user.email} LIMIT 1`;
-        if (existing.length > 0) {
-            skipped++;
-            continue;
-        }
-        const result = await sql`
-            INSERT INTO library_users (name, email, is_admin, batch_id)
-            VALUES (${user.name}, ${user.email}, ${user.isAdmin}, ${user.batchId})
-            RETURNING id, name, email, is_admin as "isAdmin", batch_id as "batchId";
-        `;
-        inserted.push(result[0] as User);
-        added++;
-    }
-    return { added, skipped, users: inserted };
+    // One statement for the whole upload (up to 1000 rows), inserted in upload order. Someone who
+    // already exists, or who appears again later in the same upload, is skipped and left unchanged.
+    const rows = await sql`
+        INSERT INTO library_users (name, email, is_admin, batch_id)
+        SELECT name, email, is_admin, batch_id
+        FROM unnest(
+            ${users.map(u => u.name)}::text[],
+            ${users.map(u => u.email)}::text[],
+            ${users.map(u => u.isAdmin)}::boolean[],
+            ${users.map(u => u.batchId)}::int[]
+        ) WITH ORDINALITY AS u(name, email, is_admin, batch_id, ord)
+        ORDER BY ord
+        ON CONFLICT (email) DO NOTHING
+        RETURNING id, name, email, is_admin as "isAdmin", batch_id as "batchId";
+    `;
+    // Ids follow insertion order, so sorting by id gives upload order.
+    const inserted = (rows as User[]).sort((a, b) => a.id - b.id);
+    return { added: inserted.length, skipped: users.length - inserted.length, users: inserted };
 }
 
 export const updateUserRole = async (userId: number, isAdmin: boolean): Promise<void> => {

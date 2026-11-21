@@ -110,13 +110,16 @@ const createBook = async (sql: SQL, req: OnboardBookReqBody): Promise<number> =>
 }
 
 const addCopies = async (sql: SQL, bookId: number, copies: string[]) => {
-    for (const copy of copies) {
-        await sql`
-            INSERT INTO book_copies (book_id, qr_code)
-            VALUES (${bookId}, ${copy})
-            ON CONFLICT (qr_code) DO NOTHING
-        `;
-    }
+    if (copies.length === 0) return;
+    // One statement for all copies (up to 500), in the order given. A QR code that already
+    // exists, on this book or another, is skipped.
+    await sql`
+        INSERT INTO book_copies (book_id, qr_code)
+        SELECT ${bookId}, qr_code
+        FROM unnest(${copies}::text[]) WITH ORDINALITY AS c(qr_code, ord)
+        ORDER BY ord
+        ON CONFLICT (qr_code) DO NOTHING
+    `;
     // books.count is maintained by the sync_book_counts trigger on book_copies,
     // so copies skipped by ON CONFLICT are not counted.
 }
