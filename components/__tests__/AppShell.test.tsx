@@ -157,4 +157,15 @@ describe("AppShell user area", () => {
         }
         expect(auth.signOut).not.toHaveBeenCalled();
     });
+
+    it("opens the video outside the shell, so the sticky sidebar and top bar cannot trap it under the page", async () => {
+        const { container } = renderAt("/");
+        for (const b of screen.getAllByRole("button", { name: "How it works" })) {
+            await userEvent.click(b);
+            const modal = screen.getByRole("dialog").parentElement!;
+            expect(container.contains(modal)).toBe(false);
+            expect(modal.parentElement).toBe(document.body);
+            await userEvent.click(screen.getByRole("button", { name: "Close" }));
+        }
+    });
 });

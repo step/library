@@ -13,9 +13,12 @@ const { chromium } = require('playwright');
 const ffmpeg = require('ffmpeg-static');
 
 const [html, out, arg3, arg4] = process.argv.slice(2);
+// PORTRAIT=1 renders the 9:16 phone cut (index.html?portrait) at 1080x1920.
+const portrait = process.env.PORTRAIT === '1';
+const [W, H] = portrait ? [1080, 1920] : [1920, 1080];
 const browser = await chromium.launch({ channel: 'chrome' });
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-await page.goto(pathToFileURL(html).href + '?export=1');
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+await page.goto(pathToFileURL(html).href + '?export=1' + (portrait ? '&portrait=1' : ''));
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(300);
 

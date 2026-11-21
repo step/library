@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -6,7 +6,7 @@ vi.mock("next/font/google", () => ({
     Lexend: () => ({ className: "mock-lexend", variable: "--font-lexend" }),
 }));
 
-import TourVideo, { TOUR } from "../TourVideo";
+import TourVideo, { PHONE_PORTRAIT, TOUR } from "../TourVideo";
 
 describe("TourVideo", () => {
     it("shows only the button until it is pressed", () => {
@@ -37,6 +37,42 @@ describe("TourVideo", () => {
         expect(track).toHaveAttribute("kind", "captions");
         expect(track).toHaveAttribute("src", TOUR.captions);
         expect(track).toHaveAttribute("srclang", "en");
+    });
+
+    describe("on a phone held upright", () => {
+        const setPhonePortrait = (matches: boolean) => {
+            const matchMedia = vi.fn((query: string) => ({ matches: matches && query === PHONE_PORTRAIT }));
+            vi.stubGlobal("matchMedia", matchMedia);
+            return matchMedia;
+        };
+        afterEach(() => vi.unstubAllGlobals());
+
+        it("plays the portrait cut full screen in the dialog, with no full-screen button", async () => {
+            const matchMedia = setPhonePortrait(true);
+            render(<TourVideo />);
+            await userEvent.click(screen.getByRole("button", { name: "Watch a 1-minute tour" }));
+
+            expect(matchMedia).toHaveBeenCalledWith(PHONE_PORTRAIT);
+            const dialog = screen.getByRole("dialog");
+            expect(dialog.parentElement).toHaveClass("tv-phone");
+            const video = dialog.querySelector("video")!;
+            expect(video.querySelector("source")).toHaveAttribute("src", TOUR.portraitVideo);
+            expect(video).toHaveAttribute("poster", TOUR.portraitPoster);
+            // Android's full screen rotated the phone and could leave the picture black.
+            expect(video).toHaveAttribute("controlslist", "nofullscreen");
+        });
+
+        it("keeps the widescreen video and its full-screen button everywhere else", async () => {
+            setPhonePortrait(false);
+            render(<TourVideo />);
+            await userEvent.click(screen.getByRole("button", { name: "Watch a 1-minute tour" }));
+
+            const dialog = screen.getByRole("dialog");
+            expect(dialog.parentElement).not.toHaveClass("tv-phone");
+            const video = dialog.querySelector("video")!;
+            expect(video.querySelector("source")).toHaveAttribute("src", TOUR.video);
+            expect(video).not.toHaveAttribute("controlslist");
+        });
     });
 
     it("keeps the files where the service worker will not precache them", () => {
